@@ -65,7 +65,7 @@ class ImagesToPNG:
         images_paths = self.list_images_paths(directory)
         images_total = len(images_paths)
         pbar = ProgressBar(images_total)
-        logger.info(f"Images to convert ({images_total}):\n{images_paths.join('\n')}")
+        logger.info(f"Images to convert ({images_total}):\n{images_paths.join(', ')}")
         for k, image_path in enumerate(images_paths):
             try:
                 image = Image.open(image_path)
