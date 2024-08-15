@@ -19,11 +19,8 @@ def validate_load_images(directory: str):
 
 def list_images_paths(directory: str):
     try:
-        files = os.listdir(directory)
-        logger.info(f"files = {files}")
-        images_paths = [os.path.join(directory, file) for file in files if not file.startswith(".") and 
-                    os.path.isfile(file) and 
-                    pathlib.Path(file).suffix in IMAGES_TYPES]
+        files_paths = [os.path.join(directory, file) for file in os.listdir(directory)]
+        images_paths = list(filter(lambda file_path: os.path.isfile(file_path) and pathlib.Path(file_path).suffix in IMAGES_TYPES, files_paths))
         return images_paths
     except Exception as e:
         return []
@@ -66,7 +63,7 @@ class ImagesToPNG:
         images_paths = list_images_paths(directory)
         images_total = len(images_paths)
         pbar = ProgressBar(images_total)
-        logger.info(f"Images to convert ({images_total}):\n{', '.join(images_paths)}")
+        logger.debug(f"Images to convert ({images_total}):\n{', '.join(images_paths)}")
         for k, image_path in enumerate(images_paths):
             try:
                 image = Image.open(image_path)
