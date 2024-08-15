@@ -20,6 +20,7 @@ def validate_load_images(directory: str):
 def list_images_paths(directory: str):
     try:
         files = os.listdir(directory)
+        logger.info(f"files = {files}")
         images_paths = [os.path.join(directory, file) for file in files if not file.startswith(".") and 
                     os.path.isfile(file) and 
                     pathlib.Path(file).suffix in IMAGES_TYPES]
