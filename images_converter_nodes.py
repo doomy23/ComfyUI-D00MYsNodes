@@ -62,7 +62,7 @@ class ImagesToPNG:
         return validate_load_images(directory)
 
     def convert_images_to_png(self, directory: str, output_directory: str, **kwargs):
-        images_paths = self.list_images_paths(directory)
+        images_paths = list_images_paths(directory)
         images_total = len(images_paths)
         pbar = ProgressBar(images_total)
         logger.info(f"Images to convert ({images_total}):\n{images_paths.join(', ')}")
