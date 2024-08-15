@@ -10,8 +10,8 @@ IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 def validate_load_images(directory: str):
     if not os.path.isdir(directory):
             return f"Directory '{directory}' cannot be found."
-    dir_files = os.listdir(directory)
-    if len(dir_files) == 0:
+    files = os.listdir(directory)
+    if len(files) == 0:
         return f"No files in directory '{directory}'."
     return True
 
@@ -66,7 +66,7 @@ class ImagesToPNG:
         if pbar is not None:
             pbar.update_absolute(images_total, images_total)
 
-        return "", "", images_total
+        return ("", "", images_total)
 
 
 NODE_CLASS_MAPPINGS = {
