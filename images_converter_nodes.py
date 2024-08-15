@@ -36,6 +36,7 @@ class ImagesToPNG:
         return {
             "required": {
                 "directory": ("STRING", {"default": "X://path/to/images"}),
+                "output_directory": ("STRING", {"default": "X://path/to/output"}),
             },
         }
     
@@ -56,15 +57,24 @@ class ImagesToPNG:
             return True
         return validate_load_images(directory)
 
-    def convert_images_to_png(self, directory: str, **kwargs):
+    def convert_images_to_png(self, directory: str, output_directory: str, **kwargs):
         images_paths = self.list_images_paths(directory)
         images_total = len(images_paths)
         pbar = ProgressBar(images_total)
 
         logger.info(f"Images to convert ({images_total}):\n{images_paths.join("\n")}")
 
+        for k, image_path in enumerate(images_paths):
+            try:
+                image = Image.open(image_path)
+            except Exception as e:
+                logger.error(f"An error occured during the convertion of image {image_path}: {e}")
+            pbar.update_absolute(k, images_total)
+
         if pbar is not None:
             pbar.update_absolute(images_total, images_total)
+
+        logger.info(f"Finished converting {images_total} images to PNG")
 
         return ("", "", images_total)
 
