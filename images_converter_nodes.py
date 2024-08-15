@@ -11,7 +11,7 @@ IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 
 def validate_load_images(directory: str):
     if not os.path.isdir(directory):
-            return f"Directory '{directory}' cannot be found."
+        return f"Directory '{directory}' cannot be found."
     files = os.listdir(directory)
     if len(files) == 0:
         return f"No files in directory '{directory}'."
@@ -48,14 +48,14 @@ class ImagesToPNG:
     CATEGORY = "💀 D00MYs/Converter"
     
     @classmethod
-    def IS_CHANGED(s, directory: str, **kwargs):
-        if directory is None:
+    def IS_CHANGED(s, directory: str, output_directory: str, **kwargs):
+        if directory is None or output_directory is None:
             return "input"
         return False
 
     @classmethod
-    def VALIDATE_INPUTS(s, directory: str, **kwargs):
-        if directory is None:
+    def VALIDATE_INPUTS(s, directory: str, output_directory: str, **kwargs):
+        if directory is None and output_directory is None:
             return True
         return validate_load_images(directory)
 
