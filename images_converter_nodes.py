@@ -63,6 +63,7 @@ class ImagesToPNG:
         converted_images_paths = list()
         images_paths = list_images_paths(directory)
         images_total = len(images_paths)
+        pathlib.Path(output_directory).mkdir(parents=True, exist_ok=True)
         pbar = ProgressBar(images_total)
         logger.debug(f"Images to convert: {images_total}")
         for k, image_path in enumerate(images_paths):
