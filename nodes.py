@@ -20,7 +20,6 @@ CONVERT_TO_TYPES_EXT = {
     "WebP": ".webp", 
     "ICO": ".ico",
 }
-TEXT_FORMAT = ["text", "json"]
 
 
 def validate_load_images(directory: str):
@@ -115,7 +114,6 @@ class D00MYsShowString:
         return {
             "required": {
                 "text": ("STRING", {"forceInput": True}),
-                "format":  (TEXT_FORMAT, ),
                 "split_lines": ("BOOLEAN", { "default": False }),
             }
         }
@@ -127,19 +125,22 @@ class D00MYsShowString:
     FUNCTION = "show_string"
     CATEGORY = CATEGORY_STRING
     
-    def show_string(self, text, format, split_lines=False, **kwargs):
-        logger.info(f"Format = {format}, split_lines = {split_lines}")
-        if split_lines == True:
-            if isinstance(text, list):
-                input = list()
-                for text_el in text:
-                    input += text_el.split("\n")
+    def show_string(self, text, split_lines, **kwargs):
+        logger.debug(f"split_lines = {split_lines}")
+        result = list()
+        for t, sl in zip(text, split_lines):
+            if sl == True:
+                if isinstance(t, list):
+                    input = list()
+                    for text_el in t:
+                        input += text_el.split("\n")
+                else:
+                    input = t.split("\n")
+                result += input
             else:
-                input = text.split("\n")
-        else:
-            input = text
-        input = json.dumps(input) if format == "json" else input
-        return {"ui": {"text": input}, "result": (input,)}
+                result += t if isinstance(t, list) else [t]
+        logger.debug(f"result = {result}")
+        return {"ui": {"text": tuple(result)}, "result": (result,)}
 
 #####################################################################
 
