@@ -1,6 +1,6 @@
 {
-  "last_node_id": 13,
-  "last_link_id": 5,
+  "last_node_id": 20,
+  "last_link_id": 12,
   "nodes": [
     {
       "id": 11,
@@ -27,10 +27,10 @@
           "name": "ConvertedPaths",
           "type": "STRING",
           "links": [
-            5
+            12
           ],
-          "shape": 3,
-          "slot_index": 1
+          "slot_index": 1,
+          "shape": 3
         },
         {
           "name": "TotalConverted",
@@ -43,32 +43,32 @@
         "Node name for S&R": "Images_Converter|D00MYs"
       },
       "widgets_values": [
-        "D:\\Git\\Image Downloads\\Elon Musk",
+        "D:\\Git\\Image Downloads\\honda civic EK 2000",
         "D:\\Git\\Image Downloads\\PNGs",
         "PNG"
       ]
     },
     {
-      "id": 13,
+      "id": 20,
       "type": "Show_String|D00MYs",
       "pos": [
-        549,
-        172
+        504,
+        184
       ],
-      "size": [
-        427.5745983471073,
-        352.6182330578513
-      ],
+      "size": {
+        "0": 354.92169189453125,
+        "1": 297.3041687011719
+      },
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
         {
-          "name": "input_string",
+          "name": "text",
           "type": "STRING",
-          "link": 5,
+          "link": 12,
           "widget": {
-            "name": "input_string"
+            "name": "text"
           }
         }
       ],
@@ -85,16 +85,17 @@
       },
       "widgets_values": [
         "",
-        "text"
+        "text",
+        false
       ]
     }
   ],
   "links": [
     [
-      5,
+      12,
       11,
       1,
-      13,
+      20,
       0,
       "STRING"
     ]

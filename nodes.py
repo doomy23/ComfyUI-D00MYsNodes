@@ -120,25 +120,24 @@ class D00MYsShowString:
             }
         }
 
+    INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING",)
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "show_string"
     CATEGORY = CATEGORY_STRING
     
-    @classmethod
-    def IS_CHANGED(s, text, format, split_lines, **kwargs):
-        if input_string is None:
-            return "input"
-        return True
-
-    @classmethod
-    def VALIDATE_INPUTS(s, text, format, split_lines, **kwargs):
-        return True
-
-    def show_string(self, text, format, split_lines, **kwargs):
+    def show_string(self, text, format, split_lines=False, **kwargs):
         logger.info(f"Format = {format}, split_lines = {split_lines}")
-        input = text.split("\n") if split_lines else text
+        if split_lines == True:
+            if isinstance(text, list):
+                input = list()
+                for text_el in text:
+                    input += text_el.split("\n")
+            else:
+                input = text.split("\n")
+        else:
+            input = text
         input = json.dumps(input) if format == "json" else input
         return {"ui": {"text": input}, "result": (input,)}
 
