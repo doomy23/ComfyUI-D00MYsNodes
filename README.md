@@ -1,5 +1,6 @@
 # ComfyUI-D00MYsNodes
 A set of custom nodes for ComfyUI I needed for myself but I'm sharing with the public. 
-- **ImagesToPNG** : Images conversions to PNG.
+- **Images_to_PNG** : Images conversions to PNG.
+- **Show_String** : Show a string or list of string value.
 
 ![Nodes examples](workflow.png "Nodes examples")

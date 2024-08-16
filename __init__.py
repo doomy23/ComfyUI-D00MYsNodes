@@ -4,13 +4,13 @@ from .text_nodes import ShowString
 from .logger import logger
 
 NODE_CLASS_MAPPINGS = {
-    "ImagesToPNG": ImagesToPNG,
-    "ShowString": ShowString,
+    "Images_to_PNG": ImagesToPNG,
+    "Show_String": ShowString,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImagesToPNG": "Images to PNG converter",
-    "ShowString": "Show String",
+    "Images_to_PNG": "Images to PNG converter",
+    "Show_String": "Show String",
 }
 
 logger.info("Loading D00MYs...")

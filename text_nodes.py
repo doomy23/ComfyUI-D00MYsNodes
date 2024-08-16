@@ -15,7 +15,7 @@ class ShowString:
     
     INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING")
-    RETURN_NAMES = ()    
+    RETURN_NAMES = ("String")    
     FUNCTION = "show"
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
