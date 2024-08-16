@@ -31,7 +31,7 @@ def list_images_paths(directory: str):
 
 class D00MYsImagesToPNG:
     def __init__(self):
-        pass
+        logger.debug("Init of D00MYsImagesToPNG")
 
     @classmethod
     def INPUT_TYPES(s):
@@ -45,7 +45,7 @@ class D00MYsImagesToPNG:
     RETURN_TYPES = ("STRING", "STRING", "INT")
     RETURN_NAMES = ("LoadedImagesPaths", "ConvertedPaths", "TotalConverted")    
     FUNCTION = "convert_images_to_png"
-    CATEGORY = "💀 D00MYs/Converter"
+    CATEGORY = "💀 D00MYs"
     
     @classmethod
     def IS_CHANGED(s, directory: str, output_directory: str, **kwargs):
@@ -81,3 +81,40 @@ class D00MYsImagesToPNG:
             pbar.update_absolute(images_total, images_total)
         logger.info(f"Finished converting {images_total} images to PNG")
         return ("\n".join(images_paths), "\n".join(converted_images_paths), images_total)
+
+
+################################ Text Nodes
+
+class D00MYsShowString:
+    def __init__(self):
+        logger.debug("Init of D00MYsShowString")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input_string": ("STRING", {"forceInput": True})
+            }
+        }
+    
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ("STRING")
+    RETURN_NAMES = ("String")    
+    FUNCTION = "show"
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
+    CATEGORY = "💀 D00MYs"
+    
+    @classmethod
+    def IS_CHANGED(s, input_string, **kwargs):
+        return True
+
+    @classmethod
+    def VALIDATE_INPUTS(s, input_string,  **kwargs):
+        if input_string is None:
+            return "input"
+        return True
+
+    def show(self, input_string, **kwargs):
+        logger.info(f"String value = {input_string}")
+        return input_string

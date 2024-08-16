@@ -1,6 +1,4 @@
-from .images_converter_nodes import D00MYsImagesToPNG
-from .text_nodes import D00MYsShowString
-
+from .nodes import D00MYsImagesToPNG, D00MYsShowString
 from .logger import logger
 
 NODE_CLASS_MAPPINGS = {
@@ -10,9 +8,9 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "D00MYs_Images_to_PNG": "Images to PNG converter",
-    "D00MYs_Show_String": "Show String",
+    "D00MYs_Show_String": "Show String Value",
 }
 
-logger.info("Loading D00MYs nodes...")
+logger.info(f"Loading D00MYs nodes: {NODE_CLASS_MAPPINGS}")
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
