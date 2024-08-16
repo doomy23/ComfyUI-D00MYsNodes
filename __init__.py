@@ -1,13 +1,13 @@
-from .nodes import D00MYsImagesToPNG, D00MYsShowString
+from .nodes import D00MYsImagesConverter, D00MYsShowString
 from .logger import logger
 
 NODE_CLASS_MAPPINGS = {
-    "D00MYs_Images_to_PNG": D00MYsImagesToPNG,
+    "D00MYs_Images_Converter": D00MYsImagesConverter,
     "D00MYs_Show_String": D00MYsShowString,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "D00MYs_Images_to_PNG": "Images to PNG converter",
+    "D00MYs_Images_Converter": "Images Converter",
     "D00MYs_Show_String": "Show String Value",
 }
 

@@ -1,4 +1,5 @@
 import os
+import json
 import pathlib
 from PIL import Image
 from comfy.utils import ProgressBar
@@ -7,6 +8,8 @@ from .logger import logger
 
 
 IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
+CONVERT_TO_TYPES = ["PNG", "JPEG", "GIF", "BMP", "TIFF", "WebP", "ICO"]
+TEXT_FORMAT = ["text", "json"]
 
 
 def validate_load_images(directory: str):
@@ -29,7 +32,7 @@ def list_images_paths(directory: str):
 ################################ Coverter Nodes
 
 
-class D00MYsImagesToPNG:
+class D00MYsImagesConverter:
     def __init__(self):
         logger.debug("Init of D00MYsImagesToPNG")
 
@@ -39,27 +42,28 @@ class D00MYsImagesToPNG:
             "required": {
                 "directory": ("STRING", {"default": "X://path/to/images"}),
                 "output_directory": ("STRING", {"default": "X://path/to/output"}),
+                "convert_to":  (CONVERT_TO_TYPES, ),
             },
         }
     
     RETURN_TYPES = ("STRING", "STRING", "INT")
     RETURN_NAMES = ("LoadedImagesPaths", "ConvertedPaths", "TotalConverted")    
-    FUNCTION = "convert_images_to_png"
+    FUNCTION = "convert_images"
     CATEGORY = "💀 D00MYs"
     
     @classmethod
-    def IS_CHANGED(s, directory: str, output_directory: str, **kwargs):
+    def IS_CHANGED(s, directory: str, output_directory: str, convert_to: str, **kwargs):
         if directory is None or output_directory is None:
             return "input"
         return False
 
     @classmethod
-    def VALIDATE_INPUTS(s, directory: str, output_directory: str, **kwargs):
+    def VALIDATE_INPUTS(s, directory: str, output_directory: str, convert_to: str, **kwargs):
         if directory is None and output_directory is None:
             return True
         return validate_load_images(directory)
 
-    def convert_images_to_png(self, directory: str, output_directory: str, **kwargs):
+    def convert_images(self, directory: str, output_directory: str, convert_to: str, **kwargs):
         converted_images_paths = list()
         images_paths = list_images_paths(directory)
         images_total = len(images_paths)
@@ -72,7 +76,10 @@ class D00MYsImagesToPNG:
                 image = Image.open(image_path)
                 save_path = f"{os.path.join(output_directory, image_name)}.png"
                 logger.debug(f"Saving: {save_path}")
-                image.save(save_path, "PNG")
+                # Resize to 256px square for ICO
+                if convert_to == "ICO":
+                    image = image.resize((256, 256), Image.ANTIALIAS)
+                image.save(save_path, convert_to)
                 converted_images_paths.append(save_path)
             except Exception as e:
                 logger.error(f"An error occured during the convertion of image {image_path}: {e}")
@@ -93,28 +100,28 @@ class D00MYsShowString:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "input_string": ("STRING", {"forceInput": True})
+                "input_string": ("STRING"),
+                "format":  (TEXT_FORMAT, ),
             }
         }
     
-    INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING")
     RETURN_NAMES = ("String")    
     FUNCTION = "show"
-    OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True,)
     CATEGORY = "💀 D00MYs"
     
     @classmethod
-    def IS_CHANGED(s, input_string, **kwargs):
-        return True
-
-    @classmethod
-    def VALIDATE_INPUTS(s, input_string,  **kwargs):
+    def IS_CHANGED(s, input_string, format, **kwargs):
         if input_string is None:
             return "input"
         return True
 
-    def show(self, input_string, **kwargs):
+    @classmethod
+    def VALIDATE_INPUTS(s, input_string, format, **kwargs):
+        return True
+
+    def show(self, input_string, format, **kwargs):
         logger.info(f"String value = {input_string}")
+        if format == "json":
+            return json.dumps(input_string)
         return input_string
