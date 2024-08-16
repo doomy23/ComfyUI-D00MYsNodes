@@ -1,9 +1,9 @@
 {
-  "last_node_id": 20,
-  "last_link_id": 12,
+  "last_node_id": 33,
+  "last_link_id": 31,
   "nodes": [
     {
-      "id": 11,
+      "id": 32,
       "type": "Images_Converter|D00MYs",
       "pos": [
         112,
@@ -27,9 +27,8 @@
           "name": "ConvertedPaths",
           "type": "STRING",
           "links": [
-            12
+            31
           ],
-          "slot_index": 1,
           "shape": 3
         },
         {
@@ -43,21 +42,21 @@
         "Node name for S&R": "Images_Converter|D00MYs"
       },
       "widgets_values": [
-        "D:\\Git\\Image Downloads\\honda civic EK 2000",
-        "D:\\Git\\Image Downloads\\PNGs",
+        "X://path/to/images",
+        "X://path/to/output",
         "PNG"
       ]
     },
     {
-      "id": 20,
-      "type": "Show_String|D00MYs",
+      "id": 33,
+      "type": "Show_Text|D00MYs",
       "pos": [
-        504,
-        184
+        530,
+        175
       ],
       "size": {
-        "0": 354.92169189453125,
-        "1": 297.3041687011719
+        "0": 378.8367919921875,
+        "1": 295.05584716796875
       },
       "flags": {},
       "order": 1,
@@ -66,7 +65,7 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 12,
+          "link": 31,
           "widget": {
             "name": "text"
           }
@@ -81,21 +80,20 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "Show_String|D00MYs"
+        "Node name for S&R": "Show_Text|D00MYs"
       },
       "widgets_values": [
         "",
-        "text",
         false
       ]
     }
   ],
   "links": [
     [
-      12,
-      11,
+      31,
+      32,
       1,
-      20,
+      33,
       0,
       "STRING"
     ]
@@ -117,10 +115,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.2100000000000002,
+      "scale": 1.0834705943388394,
       "offset": [
-        97.80556694214863,
-        10.092510743801526
+        199.63814330003686,
+        53.018366040515275
       ]
     }
   },

@@ -104,10 +104,10 @@ class D00MYsImagesConverter:
 
 ################################ Text Nodes
 
-class D00MYsShowString:
+class D00MYsShowText:
     def __init__(self):
         self.type = "output"
-        logger.debug("Init of D00MYsShowString")
+        logger.debug("Init of D00MYsShowText")
 
     @classmethod
     def INPUT_TYPES(s):
@@ -140,16 +140,16 @@ class D00MYsShowString:
             else:
                 result += t if isinstance(t, list) else [t]
         logger.debug(f"result = {result}")
-        return {"ui": {"text": tuple(result)}, "result": (result,)}
+        return {"ui": {"text": result}, "result": (result,)}
 
 #####################################################################
 
 NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
-    "Show_String|D00MYs": D00MYsShowString,
+    "Show_Text|D00MYs": D00MYsShowText,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Images_Converter|D00MYs": "Images Converter",
-    "Show_String|D00MYs": "Show String Value",
+    "Show_Text|D00MYs": "Show Text Value",
 }
