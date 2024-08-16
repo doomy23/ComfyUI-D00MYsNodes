@@ -107,40 +107,40 @@ class D00MYsImagesConverter:
 
 class D00MYsShowString:
     def __init__(self):
+        self.type = "output"
         logger.debug("Init of D00MYsShowString")
 
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "input_string": ("STRING", {"forceInput": True}),
+                "text": ("STRING", {"forceInput": True}),
                 "format":  (TEXT_FORMAT, ),
                 "split_lines": ("BOOLEAN", { "default": False }),
             }
         }
-    
+
+    RETURN_TYPES = ("STRING",)
     OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
     FUNCTION = "show_string"
     CATEGORY = CATEGORY_STRING
     
     @classmethod
-    def IS_CHANGED(s, input_string, format, split_lines, **kwargs):
+    def IS_CHANGED(s, text, format, split_lines, **kwargs):
         if input_string is None:
             return "input"
         return True
 
     @classmethod
-    def VALIDATE_INPUTS(s, input_string, format, split_lines, **kwargs):
+    def VALIDATE_INPUTS(s, text, format, split_lines, **kwargs):
         return True
 
-    def show_string(self, input_string, format, split_lines, **kwargs):
+    def show_string(self, text, format, split_lines, **kwargs):
         logger.info(f"Format = {format}, split_lines = {split_lines}")
-        input = input_string.split("\n") if split_lines else input_string
-        if format == "json":
-            print(json.dumps(input))
-        else:
-            print(input)
-        return (input,)
+        input = text.split("\n") if split_lines else text
+        input = json.dumps(input) if format == "json" else input
+        return {"ui": {"text": input}, "result": (input,)}
 
 #####################################################################
 
