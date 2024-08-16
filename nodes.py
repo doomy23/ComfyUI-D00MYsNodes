@@ -7,6 +7,8 @@ from comfy.utils import ProgressBar
 from .logger import logger
 
 
+CATEGORY_STRING = "💀 D00MYs"
+
 IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 CONVERT_TO_TYPES = ["PNG", "JPEG", "GIF", "BMP", "TIFF", "WebP", "ICO"]
 CONVERT_TO_TYPES_EXT = {
@@ -58,7 +60,7 @@ class D00MYsImagesConverter:
     RETURN_TYPES = ("STRING", "STRING", "INT")
     RETURN_NAMES = ("LoadedImagesPaths", "ConvertedPaths", "TotalConverted")    
     FUNCTION = "convert_images"
-    CATEGORY = "💀 D00MYs"
+    CATEGORY = CATEGORY_STRING
     
     @classmethod
     def IS_CHANGED(s, directory: str, output_directory: str, convert_to: str, **kwargs):
@@ -115,10 +117,11 @@ class D00MYsShowString:
             }
         }
     
-    RETURN_TYPES = ("STRING")
-    RETURN_NAMES = ("String")    
-    FUNCTION = "show"
-    CATEGORY = "💀 D00MYs"
+    RETURN_TYPES = ("STRING",)
+    OUTPUT_IS_LIST = (True,)
+    OUTPUT_NODE = True
+    FUNCTION = "show_string"
+    CATEGORY = CATEGORY_STRING
     
     @classmethod
     def IS_CHANGED(s, input_string, format, **kwargs):
@@ -130,8 +133,20 @@ class D00MYsShowString:
     def VALIDATE_INPUTS(s, input_string, format, **kwargs):
         return True
 
-    def show(self, input_string, format, **kwargs):
+    def show_string(self, input_string, format, **kwargs):
         logger.info(f"String value = {input_string}")
         if format == "json":
-            return json.dumps(input_string)
-        return input_string
+            return {"ui": {"string": input_string}, "result": (json.dumps(input_string),)}
+        return {"ui": {"string": input_string}, "result": (input_string,)}
+
+#####################################################################
+
+NODE_CLASS_MAPPINGS = {
+    "Images_Converter|D00MYs": D00MYsImagesConverter,
+    "Show_String|D00MYs": D00MYsShowString,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "Images_Converter|D00MYs": "Images Converter",
+    "Show_String|D00MYs": "Show String Value",
+}
