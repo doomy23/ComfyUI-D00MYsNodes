@@ -81,8 +81,3 @@ class ImagesToPNG:
             pbar.update_absolute(images_total, images_total)
         logger.info(f"Finished converting {images_total} images to PNG")
         return ("\n".join(images_paths), "\n".join(converted_images_paths), images_total)
-
-
-NODE_CLASS_MAPPINGS = {
-    "ImagesToPNG": ImagesToPNG,
-}
