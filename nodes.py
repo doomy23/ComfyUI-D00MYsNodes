@@ -9,6 +9,15 @@ from .logger import logger
 
 IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 CONVERT_TO_TYPES = ["PNG", "JPEG", "GIF", "BMP", "TIFF", "WebP", "ICO"]
+CONVERT_TO_TYPES_EXT = {
+    "PNG": ".png", 
+    "JPEG": ".jpg", 
+    "GIF": ".gif", 
+    "BMP": ".bmp", 
+    "TIFF": ".tiff", 
+    "WebP": ".webp", 
+    "ICO": ".ico",
+}
 TEXT_FORMAT = ["text", "json"]
 
 
@@ -74,7 +83,8 @@ class D00MYsImagesConverter:
             try:
                 image_name = pathlib.Path(image_path).stem
                 image = Image.open(image_path)
-                save_path = f"{os.path.join(output_directory, image_name)}.png"
+                ext = CONVERT_TO_TYPES_EXT[convert_to]
+                save_path = f"{os.path.join(output_directory, image_name)}{ext}"
                 logger.debug(f"Saving: {save_path}")
                 # Resize to 256px square for ICO
                 if convert_to == "ICO":
