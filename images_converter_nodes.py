@@ -29,7 +29,7 @@ def list_images_paths(directory: str):
 ################################ Coverter Nodes
 
 
-class ImagesToPNG:
+class D00MYsImagesToPNG:
     def __init__(self):
         pass
 

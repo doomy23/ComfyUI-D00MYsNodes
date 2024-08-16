@@ -1,6 +1,6 @@
 [project]
 name = "ComfyUI_D00MYsNodes"
-description = "Nodes: Images_to_PNG, Show_String."
+description = "Nodes: D00MYs_Images_to_PNG, D00MYs_Show_String."
 version = "0.0.1"
 license = {}
 
