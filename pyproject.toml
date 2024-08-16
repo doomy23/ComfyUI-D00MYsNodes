@@ -5,7 +5,7 @@ version = "0.0.1"
 license = {}
 
 [project.urls]
-Repository = hhttps://github.com/doomy23/ComfyUI-D00MYsNodes/"
+Repository = "https://github.com/doomy23/ComfyUI-D00MYsNodes/"
 
 [tool.comfy]
 PublisherId = "doomy23"
