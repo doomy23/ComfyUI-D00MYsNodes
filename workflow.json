@@ -1,13 +1,13 @@
 {
-  "last_node_id": 10,
-  "last_link_id": 4,
+  "last_node_id": 13,
+  "last_link_id": 5,
   "nodes": [
     {
-      "id": 9,
-      "type": "D00MYs_Images_Converter",
+      "id": 11,
+      "type": "Images_Converter|D00MYs",
       "pos": [
-        130,
-        218
+        112,
+        161
       ],
       "size": {
         "0": 315,
@@ -27,10 +27,10 @@
           "name": "ConvertedPaths",
           "type": "STRING",
           "links": [
-            4
+            5
           ],
-          "slot_index": 1,
-          "shape": 3
+          "shape": 3,
+          "slot_index": 1
         },
         {
           "name": "TotalConverted",
@@ -40,35 +40,35 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "D00MYs_Images_Converter"
+        "Node name for S&R": "Images_Converter|D00MYs"
       },
       "widgets_values": [
-        "",
-        "",
+        "D:\\Git\\Image Downloads\\Elon Musk",
+        "D:\\Git\\Image Downloads\\PNGs",
         "PNG"
       ]
     },
     {
-      "id": 10,
-      "type": "ShowText|pysssss",
+      "id": 13,
+      "type": "Show_String|D00MYs",
       "pos": [
-        524,
-        161
+        549,
+        172
       ],
-      "size": {
-        "0": 475.5002136230469,
-        "1": 341.1554260253906
-      },
+      "size": [
+        427.5745983471073,
+        352.6182330578513
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
         {
-          "name": "text",
+          "name": "input_string",
           "type": "STRING",
-          "link": 4,
+          "link": 5,
           "widget": {
-            "name": "text"
+            "name": "input_string"
           }
         }
       ],
@@ -81,20 +81,20 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ShowText|pysssss"
+        "Node name for S&R": "Show_String|D00MYs"
       },
       "widgets_values": [
         "",
-        ""
+        "text"
       ]
     }
   ],
   "links": [
     [
-      4,
-      9,
+      5,
+      11,
       1,
-      10,
+      13,
       0,
       "STRING"
     ]

@@ -93,6 +93,7 @@ class D00MYsImagesConverter:
                     image = image.resize((256, 256), Image.ANTIALIAS)
                 image.save(save_path, convert_to)
                 converted_images_paths.append(save_path)
+                image.close()
             except Exception as e:
                 logger.error(f"An error occured during the convertion of image {image_path}: {e}")
             pbar.update_absolute(k, images_total)
@@ -112,32 +113,34 @@ class D00MYsShowString:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "input_string": ("STRING"),
+                "input_string": ("STRING", {"forceInput": True}),
                 "format":  (TEXT_FORMAT, ),
+                "split_lines": ("BOOLEAN", { "default": False }),
             }
         }
     
-    RETURN_TYPES = ("STRING",)
-    OUTPUT_IS_LIST = (True,)
     OUTPUT_NODE = True
     FUNCTION = "show_string"
     CATEGORY = CATEGORY_STRING
     
     @classmethod
-    def IS_CHANGED(s, input_string, format, **kwargs):
+    def IS_CHANGED(s, input_string, format, split_lines, **kwargs):
         if input_string is None:
             return "input"
         return True
 
     @classmethod
-    def VALIDATE_INPUTS(s, input_string, format, **kwargs):
+    def VALIDATE_INPUTS(s, input_string, format, split_lines, **kwargs):
         return True
 
-    def show_string(self, input_string, format, **kwargs):
-        logger.info(f"String value = {input_string}")
+    def show_string(self, input_string, format, split_lines, **kwargs):
+        logger.info(f"Format = {format}, split_lines = {split_lines}")
+        input = input_string.split("\n") if split_lines else input_string
         if format == "json":
-            return {"ui": {"string": input_string}, "result": (json.dumps(input_string),)}
-        return {"ui": {"string": input_string}, "result": (input_string,)}
+            print(json.dumps(input))
+        else:
+            print(input)
+        return (input,)
 
 #####################################################################
 
