@@ -142,14 +142,37 @@ class D00MYsShowText:
         logger.debug(f"result = {result}")
         return {"ui": {"text": result}, "result": (result,)}
 
+
+################################ PaintJS Nodes
+
+class D00MYsPaintJS:
+    def __init__(self):
+        self.type = "output"
+        logger.debug("Init of D00MYsPaintJS")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {}
+    
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_NODE = True
+    FUNCTION = "save_png"
+    CATEGORY = CATEGORY_STRING
+
+    def save_png(self, **kwargs):
+        return None
+
+
 #####################################################################
 
 NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
+    "PaintJS|D00MYs": D00MYsPaintJS,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Images_Converter|D00MYs": "Images Converter",
-    "Show_Text|D00MYs": "Show Text Value",
+    "Images_Converter|D00MYs": "🔷 Images Converter",
+    "Show_Text|D00MYs": "📃 Show Text Value",
+    "PaintJS|D00MYs": "✏️ PaintJS Node",
 }
