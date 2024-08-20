@@ -43,3 +43,6 @@ def install_js():
         return
     dst_dir = get_web_ext_dir()
     shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+
+    # Copy JsPaint before extensions folder
+    shutil.copytree(get_ext_dir("jspaint"), get_comfy_dir("web/jspaint"), dirs_exist_ok=True)

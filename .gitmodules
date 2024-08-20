@@ -1,3 +1,3 @@
-[submodule "web/js/jspaint"]
-	path = web/js/jspaint
+[submodule "jspaint"]
+	path = jspaint
 	url = https://github.com/1j01/jspaint.git

@@ -1,10 +1,6 @@
 {
 	"include": [
-		"jspain/lib/jquery-3.4.1.min.js",
 		"index.js",
-		"colorbox/*.js",
-		"anypalette.js",
-		"jspain/sync-package.js",
 		"showText.js"
 	]
 }
