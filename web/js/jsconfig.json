@@ -1,0 +1,10 @@
+{
+	"include": [
+		"jquery.js",
+		"index.js",
+		"colorbox/*.js",
+		"anypalette.js",
+		"jspain/sync-package.js",
+		"showText.js"
+	]
+}
