@@ -145,7 +145,7 @@ class D00MYsShowText:
 
 ################################ PaintJS Nodes
 
-class D00MYsPaintJS:
+class D00MYsJSPaint:
     def __init__(self):
         self.type = "output"
         logger.debug("Init of D00MYsPaintJS")
@@ -168,11 +168,11 @@ class D00MYsPaintJS:
 NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
-    "PaintJS|D00MYs": D00MYsPaintJS,
+    "JSPaint|D00MYs": D00MYsJSPaint,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Images_Converter|D00MYs": "🔷 Images Converter",
     "Show_Text|D00MYs": "📃 Show Text Value",
-    "PaintJS|D00MYs": "✏️ PaintJS Node",
+    "JSPaint|D00MYs": "✏️ JSPaint Node",
 }

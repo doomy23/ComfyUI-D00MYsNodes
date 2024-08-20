@@ -1,6 +1,6 @@
 {
 	"include": [
-		"index.js",
+		"jspaint.js",
 		"showText.js"
 	]
 }
