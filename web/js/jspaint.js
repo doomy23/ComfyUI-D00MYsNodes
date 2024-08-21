@@ -102,9 +102,7 @@ app.registerExtension({
             nodeType.prototype.onNodeCreated = async function () {
                 const ret = onNodeCreated?.apply(this, arguments);
                 return created.call(this, ret);
-			};
-
-            console.log("TEST", app, nodeData);
+            };
         }
     }
 });

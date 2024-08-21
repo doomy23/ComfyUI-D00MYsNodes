@@ -187,11 +187,8 @@ class D00MYsJSPaint:
             image_pil.save(filepath, "PNG")
             image_pil.close()
             # Load from temp folder as tensor
-            logger.info(f"Reading {filepath}")
             image_temp = Image.open(filepath, mode="r")
-            logger.info(f"{image_temp}")
             image_tensor = pil2tensor(image_temp)
-            logger.info(f"{image_tensor}")
             return (image_tensor, )
         except Exception as e:
             logger.error(f"Cannot decode PNG file: {e}")
