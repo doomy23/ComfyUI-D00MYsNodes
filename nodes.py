@@ -1,10 +1,15 @@
 import os
-import json
+from io import BytesIO
+import base64
 import pathlib
+import uuid
+import torch
+import numpy
 from PIL import Image
 from comfy.utils import ProgressBar
 
 from .logger import logger
+from .utils import get_comfy_dir
 
 
 CATEGORY_STRING = "💀 D00MYs"
@@ -37,6 +42,15 @@ def list_images_paths(directory: str):
         return images_paths
     except Exception as e:
         return []
+    
+# Stolen from : https://github.com/GeekyGhost/ComfyUI-GeekyRemB/blob/SketchUITest/scripts/GeekyRembv2.py
+def pil2tensor(image):
+    np_image = numpy.array(image).astype(numpy.float32) / 255.0
+    if np_image.ndim == 2:  # If it's a grayscale image (mask)
+        np_image = np_image[None, None, ...]  # Add batch and channel dimensions
+    elif np_image.ndim == 3:  # If it's an RGB image
+        np_image = np_image[None, ...]  # Add batch dimension
+    return torch.from_numpy(np_image)
 
 
 ################################ Coverter Nodes
@@ -126,7 +140,6 @@ class D00MYsShowText:
     CATEGORY = CATEGORY_STRING
     
     def show_string(self, text, split_lines, **kwargs):
-        logger.debug(f"split_lines = {split_lines}")
         result = list()
         for t, sl in zip(text, split_lines):
             if sl == True:
@@ -139,17 +152,62 @@ class D00MYsShowText:
                 result += input
             else:
                 result += t if isinstance(t, list) else [t]
-        logger.debug(f"result = {result}")
         return {"ui": {"text": result}, "result": (result,)}
+
+
+################################ PaintJS Nodes
+
+class D00MYsJSPaint:
+    def __init__(self):
+        self.type = "output"
+        logger.debug("Init of D00MYsJSPaint")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {},
+            "required": {
+                "image": ("JSPAINT", {"default": None},),
+            },
+            "hidden": {"unique_id": "UNIQUE_ID"},
+        }
+    
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_NODE = True
+    FUNCTION = "save_png"
+    CATEGORY = CATEGORY_STRING
+
+    def save_png(self, image: str, **kwargs):
+        try:
+            # Save in temp folder
+            image_bs64 = image.split("data:image/png;base64,")[-1]
+            image_pil = Image.open(BytesIO(base64.b64decode(f"{image_bs64}==")), mode="r", formats=["PNG"]).convert('RGB')
+            filepath = f"{get_comfy_dir('temp')}/JSPAINT_{uuid.uuid4()}.png"
+            logger.info(f"Saving {filepath}")
+            image_pil.save(filepath, "PNG")
+            image_pil.close()
+            # Load from temp folder as tensor
+            logger.info(f"Reading {filepath}")
+            image_temp = Image.open(filepath, mode="r")
+            logger.info(f"{image_temp}")
+            image_tensor = pil2tensor(image_temp)
+            logger.info(f"{image_tensor}")
+            return (image_tensor, )
+        except Exception as e:
+            logger.error(f"Cannot decode PNG file: {e}")
+            return (None, )
+
 
 #####################################################################
 
 NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
+    "JSPaint|D00MYs": D00MYsJSPaint,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Images_Converter|D00MYs": "Images Converter",
-    "Show_Text|D00MYs": "Show Text Value",
+    "Images_Converter|D00MYs": "🔷 Images Converter",
+    "Show_Text|D00MYs": "📃 Show Text Value",
+    "JSPaint|D00MYs": "✏️ JSPaint Node",
 }
