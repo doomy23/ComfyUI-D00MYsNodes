@@ -1,10 +1,15 @@
 import os
-import json
+from io import BytesIO
+import base64
 import pathlib
+import uuid
+import torch
+import numpy
 from PIL import Image
 from comfy.utils import ProgressBar
 
 from .logger import logger
+from .utils import get_comfy_dir
 
 
 CATEGORY_STRING = "💀 D00MYs"
@@ -37,6 +42,15 @@ def list_images_paths(directory: str):
         return images_paths
     except Exception as e:
         return []
+    
+# Stolen from : https://github.com/GeekyGhost/ComfyUI-GeekyRemB/blob/SketchUITest/scripts/GeekyRembv2.py
+def pil2tensor(image):
+    np_image = numpy.array(image).astype(numpy.float32) / 255.0
+    if np_image.ndim == 2:  # If it's a grayscale image (mask)
+        np_image = np_image[None, None, ...]  # Add batch and channel dimensions
+    elif np_image.ndim == 3:  # If it's an RGB image
+        np_image = np_image[None, ...]  # Add batch dimension
+    return torch.from_numpy(np_image)
 
 
 ################################ Coverter Nodes
@@ -146,7 +160,7 @@ class D00MYsShowText:
 class D00MYsJSPaint:
     def __init__(self):
         self.type = "output"
-        logger.debug("Init of D00MYsPaintJS")
+        logger.debug("Init of D00MYsJSPaint")
 
     @classmethod
     def INPUT_TYPES(s):
@@ -163,9 +177,25 @@ class D00MYsJSPaint:
     FUNCTION = "save_png"
     CATEGORY = CATEGORY_STRING
 
-    def save_png(self, image, **kwargs):
-        logger.info(f"{image}")
-        return None
+    def save_png(self, image: str, **kwargs):
+        try:
+            # Save in temp folder
+            image_bs64 = image.split("data:image/png;base64,")[-1]
+            image_pil = Image.open(BytesIO(base64.b64decode(f"{image_bs64}==")), mode="r", formats=["PNG"]).convert('RGB')
+            filepath = f"{get_comfy_dir('temp')}/JSPAINT_{uuid.uuid4()}.png"
+            logger.info(f"Saving {filepath}")
+            image_pil.save(filepath, "PNG")
+            image_pil.close()
+            # Load from temp folder as tensor
+            logger.info(f"Reading {filepath}")
+            image_temp = Image.open(filepath, mode="r")
+            logger.info(f"{image_temp}")
+            image_tensor = pil2tensor(image_temp)
+            logger.info(f"{image_tensor}")
+            return (image_tensor, )
+        except Exception as e:
+            logger.error(f"Cannot decode PNG file: {e}")
+            return (None, )
 
 
 #####################################################################

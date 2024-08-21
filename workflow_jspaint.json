@@ -1,0 +1,45 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "JSPaint|D00MYs",
+      "pos": [
+        198,
+        292
+      ],
+      "size": [
+        825.6379000000002,
+        574.153
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "JSPaint|D00MYs"
+      }
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6830134553650705,
+      "offset": [
+        193.02920000000023,
+        192.39130000000023
+      ]
+    }
+  },
+  "version": 0.4
+}

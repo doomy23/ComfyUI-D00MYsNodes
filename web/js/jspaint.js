@@ -32,16 +32,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
     }
 }
 
-function waitUntil(test, interval, callback) {
-    if (test()) {
-        callback();
-    } else {
-        setTimeout(waitUntil, interval, test, interval, callback);
-    }
-}
-
-function JSPAINT(node, inputName, inputData) {
-    console.log("JSPAINT = ", node, inputName, inputData);
+function JSPAINT() {
     // Create widget
     const uid  = uuid();
     const div = $el("div", {
@@ -66,8 +57,13 @@ function JSPAINT(node, inputName, inputData) {
         draw(ctx, node, width, y) {
             Object.assign(this.inputEl.style, get_position_style(ctx, width, y, node.size[1]));
         },
-        async serializeValue(nodeId, widgetIndex) {
-            return "Data That Goes to the Python Side";
+        async serializeValue(node, widgetIndex) {
+            const widget = findWidget(node, "JSPAINT", "type");
+            const iframe = document.getElementById(widget.uid);
+            const jspaint = iframe.contentWindow;
+            const hash = jspaint.location.hash.split(":")[jspaint.location.hash.split(":").length - 1];
+            const imageKey = `image#${hash}`
+            return jspaint.localStorage.getItem(imageKey);
         }
     };
     return widget;
@@ -78,7 +74,8 @@ app.registerExtension({
     getCustomWidgets(app) {
         return {
           JSPAINT: (node, inputName, inputData, app) => {
-            const widget = JSPAINT(node, inputName, inputData);
+            Object.assign(node, {size: [825, 575]});
+            const widget = JSPAINT();
             node.onRemoved = function () {
                 for (const w of node?.widgets) {
                   if (w?.inputEl) w.inputEl.remove();
@@ -91,18 +88,12 @@ app.registerExtension({
       },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "JSPaint|D00MYs") {
-            // Create Widget and resize
+            // Init
             function created(ret) {
-                // Init
-                this.serialize_widgets = false;
+                this.serialize_widgets = true;
                 this.name = `${nodeData.name}_${this.id}`;
-                
                 const widget = findWidget(this, "JSPAINT", "type");
                 document.body.appendChild(widget.inputEl);
-                
-                console.log("THIS 1 =", this);
-                console.log("Widget = ", widget);
-
                 return ret;
             }
 
@@ -112,6 +103,8 @@ app.registerExtension({
                 const ret = onNodeCreated?.apply(this, arguments);
                 return created.call(this, ret);
 			};
+
+            console.log("TEST", app, nodeData);
         }
     }
 });

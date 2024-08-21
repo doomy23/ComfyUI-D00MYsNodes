@@ -1,34 +1,9 @@
-import os
 import shutil
-import inspect
-from server import PromptServer
 
 from .logger import logger
+from .utils import get_ext_dir, get_comfy_dir
 
 #################################################################### Installing JS
-# https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/pysssss.py
-
-def get_ext_dir(subpath=None, mkdir=False):
-    dir = os.path.dirname(__file__)
-    if subpath is not None:
-        dir = os.path.join(dir, subpath)
-
-    dir = os.path.abspath(dir)
-
-    if mkdir and not os.path.exists(dir):
-        os.makedirs(dir)
-    return dir
-
-def get_comfy_dir(subpath=None, mkdir=False):
-    dir = os.path.dirname(inspect.getfile(PromptServer))
-    if subpath is not None:
-        dir = os.path.join(dir, subpath)
-
-    dir = os.path.abspath(dir)
-
-    if mkdir and not os.path.exists(dir):
-        os.makedirs(dir)
-    return dir
 
 def install_js():
     logger.info(f"Installing JSPAINT")
