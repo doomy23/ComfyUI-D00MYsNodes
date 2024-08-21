@@ -126,7 +126,6 @@ class D00MYsShowText:
     CATEGORY = CATEGORY_STRING
     
     def show_string(self, text, split_lines, **kwargs):
-        logger.debug(f"split_lines = {split_lines}")
         result = list()
         for t, sl in zip(text, split_lines):
             if sl == True:
@@ -139,7 +138,6 @@ class D00MYsShowText:
                 result += input
             else:
                 result += t if isinstance(t, list) else [t]
-        logger.debug(f"result = {result}")
         return {"ui": {"text": result}, "result": (result,)}
 
 
@@ -152,14 +150,21 @@ class D00MYsJSPaint:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {}
+        return {
+            "optional": {},
+            "required": {
+                "image": ("JSPAINT", {"default": None},),
+            },
+            "hidden": {"unique_id": "UNIQUE_ID"},
+        }
     
     RETURN_TYPES = ("IMAGE",)
     OUTPUT_NODE = True
     FUNCTION = "save_png"
     CATEGORY = CATEGORY_STRING
 
-    def save_png(self, **kwargs):
+    def save_png(self, image, **kwargs):
+        logger.info(f"{image}")
         return None
 
 

@@ -3,8 +3,6 @@ from .logger import logger
 from .init import install_js
 
 logger.info(f"Loading D00MYs nodes: {NODE_CLASS_MAPPINGS}")
-
-logger.info(f"Installing JS")
 install_js()
 
 WEB_DIRECTORY = "./web"

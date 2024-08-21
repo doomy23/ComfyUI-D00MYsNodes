@@ -30,19 +30,7 @@ def get_comfy_dir(subpath=None, mkdir=False):
         os.makedirs(dir)
     return dir
 
-def get_web_ext_dir():
-    dir = get_comfy_dir("web/extensions/D00MYs")
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    return dir
-
 def install_js():
-    src_dir = get_ext_dir("web/js")
-    if not os.path.exists(src_dir):
-        logger.error("NO JS!")
-        return
-    dst_dir = get_web_ext_dir()
-    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-
+    logger.info(f"Installing JSPAINT")
     # Copy JsPaint before extensions folder
     shutil.copytree(get_ext_dir("jspaint"), get_comfy_dir("web/jspaint"), dirs_exist_ok=True)
