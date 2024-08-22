@@ -1,6 +1,7 @@
 {
 	"include": [
 		"jspaint.js",
-		"showText.js"
+		"showText.js",
+		"jquery-3.4.1.min.js", // Fix for JSPaint
 	]
 }

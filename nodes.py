@@ -3,18 +3,14 @@ from io import BytesIO
 import base64
 import pathlib
 import uuid
-import torch
-import numpy
 from PIL import Image
 from comfy.utils import ProgressBar
 
 from .logger import logger
-from .utils import get_comfy_dir
+from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor
 
 
 CATEGORY_STRING = "💀 D00MYs"
-
-IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 CONVERT_TO_TYPES = ["PNG", "JPEG", "GIF", "BMP", "TIFF", "WebP", "ICO"]
 CONVERT_TO_TYPES_EXT = {
     "PNG": ".png", 
@@ -25,32 +21,6 @@ CONVERT_TO_TYPES_EXT = {
     "WebP": ".webp", 
     "ICO": ".ico",
 }
-
-
-def validate_load_images(directory: str):
-    if not os.path.isdir(directory):
-        return f"Directory '{directory}' cannot be found."
-    files = os.listdir(directory)
-    if len(files) == 0:
-        return f"No files in directory '{directory}'."
-    return True
-
-def list_images_paths(directory: str):
-    try:
-        files_paths = [os.path.join(directory, file) for file in os.listdir(directory)]
-        images_paths = list(filter(lambda file_path: os.path.isfile(file_path) and pathlib.Path(file_path).suffix in IMAGES_TYPES, files_paths))
-        return images_paths
-    except Exception as e:
-        return []
-    
-# Stolen from : https://github.com/GeekyGhost/ComfyUI-GeekyRemB/blob/SketchUITest/scripts/GeekyRembv2.py
-def pil2tensor(image):
-    np_image = numpy.array(image).astype(numpy.float32) / 255.0
-    if np_image.ndim == 2:  # If it's a grayscale image (mask)
-        np_image = np_image[None, None, ...]  # Add batch and channel dimensions
-    elif np_image.ndim == 3:  # If it's an RGB image
-        np_image = np_image[None, ...]  # Add batch dimension
-    return torch.from_numpy(np_image)
 
 
 ################################ Coverter Nodes
@@ -155,7 +125,7 @@ class D00MYsShowText:
         return {"ui": {"text": result}, "result": (result,)}
 
 
-################################ PaintJS Nodes
+################################ JSPaint Nodes
 
 class D00MYsJSPaint:
     def __init__(self):
