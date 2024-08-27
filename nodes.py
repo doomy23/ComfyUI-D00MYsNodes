@@ -50,6 +50,45 @@ def load_images(paths: list):
             logger.error(f"Cannot load {path} because it does not exist.")
     return results
 
+def load_caption(path: str):
+    image_name = pathlib.Path(path).stem
+    image_dir = str(pathlib.Path(path).parent)
+    image_ext = pathlib.Path(path).suffix
+    search_for = [
+        f"{os.path.join(image_dir, image_name)}.txt",
+        f"{os.path.join(image_dir, image_name)}.caption",
+        f"{os.path.join(image_dir, image_name)}{image_ext}.txt",
+        f"{os.path.join(image_dir, image_name)}{image_ext}.caption",
+    ]
+    logger.debug(f"Search for: {search_for}")
+    for search in search_for:
+        if os.path.exists(search):
+            logger.debug(f"Found: {search}")
+            # Load caption
+            with open(search, "r", encoding="UTF-8") as fp:
+                return str(fp.read())
+    # If None found return empty String
+    return ""
+
+def load_images_with_captions(paths: list):
+    images = list()
+    captions = list()
+    for path in paths:
+        if os.path.isfile(path):
+            if pathlib.Path(path).suffix in IMAGES_TYPES:
+                captions.append(load_caption(path))
+                images.append(load_image(path))
+            else:
+                logger.error(f"Cannot load {path} because it's not a valid image type.")
+        elif os.path.isdir(path):
+            images_paths = list_images_paths(path)
+            for image_path in images_paths:
+                captions.append(load_caption(image_path))
+                images.append(load_image(image_path))
+        else:
+            logger.error(f"Cannot load {path} because it does not exist.")
+    return images, captions
+
 
 ################################ Coverter Nodes
 
@@ -69,7 +108,7 @@ class D00MYsImagesConverter:
         }
     
     RETURN_TYPES = ("STRING", "STRING", "INT")
-    RETURN_NAMES = ("LoadedImagesPaths", "ConvertedPaths", "TotalConverted")    
+    RETURN_NAMES = ("Loaded Images Paths", "Converted Paths", "Total Converted")
     FUNCTION = "convert_images"
     CATEGORY = CATEGORY_STRING
 
@@ -120,12 +159,13 @@ class D00MYsShowText:
         return {
             "required": {
                 "text": ("STRING", {"forceInput": True}),
-                "split_lines": ("BOOLEAN", { "default": False }),
+                "split_lines": ("BOOLEAN", {"default": False}),
             }
         }
 
     INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("STRING",)
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "show_string"
@@ -133,17 +173,13 @@ class D00MYsShowText:
     
     def show_string(self, text, split_lines, **kwargs):
         result = list()
-        for t, sl in zip(text, split_lines):
-            if sl == True:
-                if isinstance(t, list):
-                    input = list()
-                    for text_el in t:
-                        input += text_el.split("\n")
-                else:
-                    input = t.split("\n")
-                result += input
+        split_lines = split_lines[0]
+        for string in text:
+            if split_lines:
+                lines = string.split("\n")
+                result += lines
             else:
-                result += t if isinstance(t, list) else [t]
+                result.append(string)
         return {"ui": {"text": result}, "result": (result,)}
     
 
@@ -164,6 +200,7 @@ class D00MYsStringsFromList:
 
     INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("STRING",)
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "get_string"
@@ -180,6 +217,7 @@ class D00MYsStringsFromList:
             logger.error(f"An error occured : {e}")
         return (results, )
 
+
 ################################ Images Nodes
 
 class D00MYsRandomImages:
@@ -193,20 +231,34 @@ class D00MYsRandomImages:
             "required": {
                 "images": ("IMAGE", {"forceInput": True}),
                 "count": ("INT", {"default": 1}),
+            },
+            "optional": {
+                "captions": ("STRING", {"forceInput": True}),
             }
         }
     
     INPUT_IS_LIST = True
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "STRING",)
+    RETURN_NAMES = ("Images", "Captions",)
     FUNCTION = "random_images"
     OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True,)
+    OUTPUT_IS_LIST = (True, True,)
     CATEGORY = CATEGORY_STRING
 
-    def random_images(self, images: list, count: list, **kwargs):
+    def random_images(self, images: list, count: list, captions: list, **kwargs):
         count = count[0]
-        result = random.choices(images, k=count)
-        return (result,)
+        if len(captions) == 0:
+            result = random.choices(images, k=count)
+            return (result, [],)
+        else:
+            choices = [(image, caption) for image, caption in zip(images, captions)]
+            results = random.choices(choices, k=count)
+            results_images = list()
+            results_captions = list()
+            for image, caption in results:
+                results_images.append(image)
+                results_captions.append(caption)
+            return (results_images, results_captions,)
 
 
 class D00MYsLoadImagesFromPaths:
@@ -219,24 +271,30 @@ class D00MYsLoadImagesFromPaths:
         return {
             "required": {
                 "paths": ("STRING", {"default": "X://path/to/images/image.ext"}),
+                "load_captions": ("BOOLEAN", {"default": False}),
             }
         }
     
     INPUT_IS_LIST = True
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "STRING",)
+    RETURN_NAMES = ("Images", "Captions")
     FUNCTION = "load_images"
     OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True,)
+    OUTPUT_IS_LIST = (True, True,)
     CATEGORY = CATEGORY_STRING
 
-    def load_images(self, paths, **kwargs):
-        if isinstance(paths, list):
-            if len(paths) == 1:
-                # Split it
-                paths = split_paths(paths[0])
-            return (load_images(paths),)
+    def load_images(self, paths: list, load_captions: list, **kwargs):
+        load_captions = load_captions[0]
+        if len(paths) == 1:
+            # Split it
+            paths = split_paths(paths[0])
+        logger.debug(f"Load captions? {load_captions}, Paths = {paths}")
+        if load_captions:
+            # Load .txt or .caption files matching with its image
+            images, captions = load_images_with_captions(paths)
+            return (images, captions,)
         else:
-            return (load_images(split_paths(paths)),)
+            return (load_images(paths), [],)
 
 
 ################################ JSPaint Nodes
@@ -257,6 +315,7 @@ class D00MYsJSPaint:
         }
     
     RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("Image",)
     OUTPUT_NODE = True
     FUNCTION = "save_png"
     CATEGORY = CATEGORY_STRING
