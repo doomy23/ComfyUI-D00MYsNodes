@@ -3,7 +3,7 @@ from io import BytesIO
 import base64
 import pathlib
 import uuid
-import torchvision
+import random
 from PIL import Image
 from comfy.utils import ProgressBar
 
@@ -28,20 +28,28 @@ def split_paths(paths: str):
     splited_paths_2 = paths.split("\n")
     return list(set(splited_paths_1 + splited_paths_2))
 
+def load_image(path: str):
+    image_temp = Image.open(path, mode="r")
+    return pil2tensor(image_temp)
+
 def load_images(paths: list):
     results = []
     for path in paths:
         if os.path.isfile(path):
             if pathlib.Path(path).suffix in IMAGES_TYPES:
                 # Load image
-                image_temp = Image.open(path, mode="r")
-                image_tensor = pil2tensor(image_temp)
-                results.append(image_tensor)
+                results.append(load_image(path))
             else:
                 logger.error(f"Cannot load {path} because it's not a valid image type.")
+        elif os.path.isdir(path):
+            # Load all directory images
+            images_paths = list_images_paths(path)
+            for image_path in images_paths:
+                results.append(load_image(image_path))
         else:
             logger.error(f"Cannot load {path} because it does not exist.")
     return results
+
 
 ################################ Coverter Nodes
 
@@ -64,12 +72,6 @@ class D00MYsImagesConverter:
     RETURN_NAMES = ("LoadedImagesPaths", "ConvertedPaths", "TotalConverted")    
     FUNCTION = "convert_images"
     CATEGORY = CATEGORY_STRING
-    
-    @classmethod
-    def IS_CHANGED(s, directory: str, output_directory: str, convert_to: str, **kwargs):
-        if directory is None or output_directory is None:
-            return "input"
-        return True  # Always restart unless told not to
 
     @classmethod
     def VALIDATE_INPUTS(s, directory: str, output_directory: str, convert_to: str, **kwargs):
@@ -178,6 +180,34 @@ class D00MYsStringsFromList:
             logger.error(f"An error occured : {e}")
         return (results, )
 
+################################ Images Nodes
+
+class D00MYsRandomImages:
+    def __init__(self):
+        self.type = "output"
+        logger.debug("Init of D00MYsRandomImages")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE", {"forceInput": True}),
+                "count": ("INT", {"default": 1}),
+            }
+        }
+    
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "random_images"
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
+    CATEGORY = CATEGORY_STRING
+
+    def random_images(self, images: list, count: list, **kwargs):
+        count = count[0]
+        result = random.choices(images, k=count)
+        return (result,)
+
 
 class D00MYsLoadImagesFromPaths:
     def __init__(self):
@@ -255,14 +285,16 @@ NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
     "Strings_From_List|D00MYs": D00MYsStringsFromList,
-    "JSPaint|D00MYs": D00MYsJSPaint,
+    "Random_Images|D00MYs": D00MYsRandomImages,
     "Load_Images_From_Paths|D00MYs": D00MYsLoadImagesFromPaths,
+    "JSPaint|D00MYs": D00MYsJSPaint,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Images_Converter|D00MYs": "🔷 Images Converter",
     "Show_Text|D00MYs": "📃 Show Text Value",
     "Strings_From_List|D00MYs": "📎 Strings from List",
-    "JSPaint|D00MYs": "✏️ JSPaint Node",
+    "Random_Images|D00MYs": "🔀 Random Images",
     "Load_Images_From_Paths|D00MYs": "📁 Load Images from Paths",
+    "JSPaint|D00MYs": "✏️ JSPaint Node",
 }
