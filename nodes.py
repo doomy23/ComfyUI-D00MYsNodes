@@ -145,6 +145,40 @@ class D00MYsShowText:
         return {"ui": {"text": result}, "result": (result,)}
     
 
+class D00MYsStringsFromList:
+    def __init__(self):
+        self.type = "output"
+        logger.debug("Init of D00MYsStringFromList")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"forceInput": True}),
+                "index": ("INT", {"default": 0}),
+                "length": ("INT", {"default": 1}),
+            }
+        }
+
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ("STRING",)
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
+    FUNCTION = "get_string"
+    CATEGORY = CATEGORY_STRING
+
+    def get_string(self, text: list, index, length, **kwargs):
+        results = []
+        try:
+            if len(text) == 1:
+                # Split it
+                text = text[0].split("\n")
+            results = text[int(index[0]):int(index[0])+int(length[0])]
+        except Exception as e:
+            logger.error(f"An error occured : {e}")
+        return (results, )
+
+
 class D00MYsLoadImagesFromPaths:
     def __init__(self):
         self.type = "output"
@@ -220,6 +254,7 @@ class D00MYsJSPaint:
 NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
+    "Strings_From_List|D00MYs": D00MYsStringsFromList,
     "JSPaint|D00MYs": D00MYsJSPaint,
     "Load_Images_From_Paths|D00MYs": D00MYsLoadImagesFromPaths,
 }
@@ -227,6 +262,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "Images_Converter|D00MYs": "🔷 Images Converter",
     "Show_Text|D00MYs": "📃 Show Text Value",
+    "Strings_From_List|D00MYs": "📎 Strings from List",
     "JSPaint|D00MYs": "✏️ JSPaint Node",
     "Load_Images_From_Paths|D00MYs": "📁 Load Images from Paths",
 }

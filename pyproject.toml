@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI_D00MYsNodes"
 description = "Nodes: Images_Converter, Show_Text."
-version = "0.0.2"
+version = "0.0.3"
 license = "MIT"
 
 [project.urls]
