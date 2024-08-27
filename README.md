@@ -2,6 +2,7 @@
 A set of custom nodes for ComfyUI I needed for myself but I'm sharing with the public. 
 - **Images_Converter** : Images conversions to any PNG, JPEG, or others, keeping their respective size and ratio.
 - **Show_Text** : Show a text or list of text values.
+- **Strings_From_List** : Split the text or list to get one or many text outputs.
 - **Load_Images_from_Paths** : Load images from their file paths, keeping their respective size and ratio.
 - **JSPaint** : Integration of JSPaint into ComfyUI
 

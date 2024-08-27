@@ -167,13 +167,13 @@ class D00MYsStringsFromList:
     FUNCTION = "get_string"
     CATEGORY = CATEGORY_STRING
 
-    def get_string(self, text: list, index: int, length: int, **kwargs):
+    def get_string(self, text: list, index, length, **kwargs):
         results = []
         try:
             if len(text) == 1:
                 # Split it
                 text = text[0].split("\n")
-            results = text[index:length]
+            results = text[int(index[0]):int(index[0])+int(length[0])]
         except Exception as e:
             logger.error(f"An error occured : {e}")
         return (results, )
