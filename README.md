@@ -14,7 +14,7 @@ A set of custom nodes for ComfyUI I needed for myself but I'm sharing with the p
 
 ## Load Images from Paths (with captions) + Random Images 
 
-![Random Images Nodes example](workflow_random.png "Random Image Nodes example")
+![Random Images Nodes example](workflow_random_captions.png "Random Image Nodes example")
 
 The filename of the caption must be the same as the matching image with the extension: `.txt` or `.caption`.
 For eg. with `banana.png`, it will try to load in the same directory the following files if they exist :
