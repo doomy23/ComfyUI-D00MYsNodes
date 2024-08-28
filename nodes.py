@@ -492,6 +492,10 @@ class D00MYsJSPaint:
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
     
+    @classmethod
+    def IS_CHANGED(s, image, **kwargs):
+        return image
+    
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("Image",)
     OUTPUT_NODE = True
@@ -502,7 +506,7 @@ class D00MYsJSPaint:
         try:
             # Save in temp folder
             image_bs64 = image.split("data:image/png;base64,")[-1]
-            image_pil = Image.open(BytesIO(base64.b64decode(f"{image_bs64}==")), mode="r", formats=["PNG"]).convert('RGB')
+            image_pil = Image.open(BytesIO(base64.b64decode(f"{image_bs64}==")), formats=["PNG"]).convert('RGB')
             filepath = f"{get_comfy_dir('temp')}/JSPAINT_{uuid.uuid4()}.png"
             logger.info(f"Saving {filepath}")
             image_pil.save(filepath, "PNG")
