@@ -54,12 +54,9 @@ def pil2tensor(image: Image):
     if np_image.ndim == 2:  # If it's a grayscale image (mask)
         np_image = numpy.array(image.convert("RGB")).astype(numpy.float32) / 255.0
         np_image = np_image[None, ...]
-        print(np_image.shape)
         return torch.from_numpy(np_image)
     elif np_image.ndim == 3:  # If it's an RGB image
-        print("RGB")
         np_image = np_image[None, ...]  # Add batch dimension
-        print(np_image.shape)
         return torch.from_numpy(np_image)
 
 def tensor2pil(tensor):
