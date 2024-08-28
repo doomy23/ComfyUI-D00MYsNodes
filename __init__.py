@@ -2,7 +2,8 @@ from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 from .logger import logger
 from .init import install_js
 
-logger.info(f"Loading D00MYs nodes: {NODE_CLASS_MAPPINGS}")
+nodesstr = "\n".join(NODE_CLASS_MAPPINGS.keys())
+logger.info(f"Loading D00MYs nodes: {nodesstr}")
 install_js()
 
 WEB_DIRECTORY = "./web"

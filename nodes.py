@@ -6,10 +6,12 @@ import pathlib
 import uuid
 import random
 from PIL import Image
+
+import folder_paths
 from comfy.utils import ProgressBar
 
 from .logger import logger
-from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor, IMAGES_TYPES
+from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor, tensor2pil, tensor2numpy, IMAGES_TYPES
 
 
 CATEGORY_STRING = "💀 D00MYs"
@@ -52,9 +54,10 @@ def load_images(paths: list):
     return results
 
 def load_caption(path: str):
-    image_name = pathlib.Path(path).stem
-    image_dir = str(pathlib.Path(path).parent)
-    image_ext = pathlib.Path(path).suffix
+    image_path = pathlib.Path(path)
+    image_name = image_path.stem
+    image_dir = str(image_path.parent)
+    image_ext = image_path.suffix
     search_for = [
         f"{os.path.join(image_dir, image_name)}.txt",
         f"{os.path.join(image_dir, image_name)}.caption",
@@ -228,7 +231,10 @@ class D00MYsSaveText:
         return {
             "required": {
                 "text": ("STRING", {"forceInput": True}),
-                "filename_prefix": ("STRING", {"default": "ComfyUI"})
+                "filename_prefix": ("STRING", {"default": "ComfyUI"}),
+            },
+            "optional": {
+                "images_paths": ("STRING", {"forceInput": True}),
             }
         }
 
@@ -240,25 +246,106 @@ class D00MYsSaveText:
     FUNCTION = "save_file"
     CATEGORY = CATEGORY_STRING
 
-    def save_file(self, text: list, filename_prefix: list, **kwargs):
-        logger.info(f"Text to save: {text}")
+    def save_file(self, text: list, filename_prefix: list, images_paths: list, **kwargs):
         filename_prefix = filename_prefix[0]
-        if len(text) == 1:
-            text = text[0]
+        if len(images_paths) == 1:
+            image_path = image_path[0]
+            if len(text) == 1:
+                text = text[0]
+            else:
+                text = "\n".join(text)
+            path = None
+            if image_path:
+                image_path_obj = pathlib.Path(image_path)
+                image_name = image_path_obj.stem
+                image_dir = str(image_path_obj.parent)
+                path = os.path.join(image_dir, f"{image_name}.txt")
+            else:
+                index = 1
+                path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
+                while os.path.exists(path):
+                    index = index + 1
+                    path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
+            if path:
+                with open(path, "w+", encoding="UTF-8") as fp:
+                    fp.write(text)
+                logger.info(f"Created file {path}")
+        elif len(images_paths) == len(text):
+            for index, image_path in enumerate(images_paths):
+                text_to_save = text[index]
+                image_path_obj = pathlib.Path(image_path)
+                image_name = image_path_obj.stem
+                image_dir = str(image_path_obj.parent)
+                path = os.path.join(image_dir, f"{image_name}.txt")
+                with open(path, "w+", encoding="UTF-8") as fp:
+                    fp.write(text_to_save)
+                logger.info(f"Created file {path}")
         else:
-            text = "\n".join(text)
-        index = 1
-        path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
-        while os.path.exists(path):
-            index = index + 1
-            path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
-        with open(path, "w+", encoding="UTF-8") as fp:
-            fp.write(text)
-        logger.info(f"Created file {path}")
+            logger.error(f"Text length must be the same as image paths or there must be only one image path. Got {len(images_paths)}.")
         return (path,)
 
 
 ################################ Images Nodes
+
+class D00MYsSaveImage:
+    def __init__(self):
+        self.type = "output"
+        logger.debug("Init of D00MYsSaveImage")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE", {"forceInput": True}),
+                "filename_prefix": ("STRING", {"default": "ComfyUI"}),
+                "file_type":  (CONVERT_TO_TYPES, ),
+            },
+            "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        }
+    
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("Images Paths",)
+    FUNCTION = "save_image"
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True,)
+    CATEGORY = CATEGORY_STRING
+
+    def save_image(self, images: list, filename_prefix: list, file_type: list, prompt, extra_pnginfo, **kwargs):
+        filename_prefix = filename_prefix[0]
+        file_type = file_type[0]
+        results = list()
+        results_paths = list()
+        pbar = ProgressBar(len(images))
+        logger.info(f"{prompt}\n\n{extra_pnginfo}")
+        for index, image in enumerate(images):
+            try:
+                img = tensor2pil(image)
+                full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(filename_prefix, get_comfy_dir("output"), 
+                                                                                                            image.shape[1], image.shape[0])
+                num = counter+index
+                image_file_name = os.path.join(full_output_folder, f"{filename}_{str(num).zfill(5)}.png")
+                while os.path.exists(image_file_name):  # Iterates until find a file number that does not exists
+                    num = num+1
+                    image_file_name = os.path.join(full_output_folder, f"{filename}_{str(num).zfill(5)}.png")
+                logger.info(f"Saving {image_file_name}")
+                # TODO: Add image metadata
+                if file_type == "ICO":
+                    img = img.resize((256, 256), Image.ANTIALIAS)  # Resize to 256px square for ICO
+                img.save(image_file_name, file_type)
+                results.append({
+                    "filename": os.path.basename(image_file_name),
+                    "subfolder": subfolder,
+                    "type": self.type
+                })
+                results_paths.append(image_file_name)
+            except Exception as e:
+                logger.error(f"Cannot save image {image_file_name}: {e}")
+            pbar.update_absolute(index+1, len(images))
+        if pbar is not None:
+            pbar.update_absolute(len(images), len(images))
+        return {"ui": {"images": results}, "result": (results_paths,)}
+
 
 class D00MYsRandomImages:
     def __init__(self):
@@ -393,6 +480,7 @@ NODE_CLASS_MAPPINGS = {
     "Show_Text|D00MYs": D00MYsShowText,
     "Strings_From_List|D00MYs": D00MYsStringsFromList,
     "Save_Text|D00MYs": D00MYsSaveText,
+    "Save_Images|D00MYs": D00MYsSaveImage,
     "Random_Images|D00MYs": D00MYsRandomImages,
     "Load_Images_From_Paths|D00MYs": D00MYsLoadImagesFromPaths,
     "JSPaint|D00MYs": D00MYsJSPaint,
@@ -403,6 +491,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Show_Text|D00MYs": "📃 Show Text Value",
     "Strings_From_List|D00MYs": "📎 Strings from List",
     "Save_Text|D00MYs": "💾 Save Text",
+    "Save_Images|D00MYs": "🖼️ Save Images",
     "Random_Images|D00MYs": "🔀 Random Images",
     "Load_Images_From_Paths|D00MYs": "📁 Load Images from Paths",
     "JSPaint|D00MYs": "✏️ JSPaint Node",
