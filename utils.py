@@ -3,6 +3,7 @@ import inspect
 import torch
 import numpy
 import pathlib
+from PIL import Image
 from server import PromptServer
 
 IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
@@ -54,3 +55,14 @@ def pil2tensor(image):
     elif np_image.ndim == 3:  # If it's an RGB image
         np_image = np_image[None, ...]  # Add batch dimension
     return torch.from_numpy(np_image)
+
+def tensor2pil(tensor):
+    tensor = tensor2numpy(tensor)
+    if numpy.ndim(tensor)>3:
+        assert tensor.shape[0] == 1
+        tensor = tensor[0]
+    return Image.fromarray(tensor)
+
+def tensor2numpy(tensor):
+    tensor = tensor*255
+    return numpy.array(tensor, dtype=numpy.uint8)
