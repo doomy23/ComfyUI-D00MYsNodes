@@ -23,6 +23,14 @@ For eg. with `banana.png`, it will try to load in the same directory the followi
 - `banana.txt` | `banana.png.txt`
 - `banana.caption` | `banana.png.caption`
 
+## Save Images + Save Text (captions)
+
+![Save Images Node example](workflow_save_images_captions.png "Save Images Node example")
+
+The `filename_prefix` is ignored for the `Save Text` node because we are passing it the saved image path.
+It will take the same filename name as the image.
+N.B. In this example I just do preprocessing on the image but it can be used in various ways; connect it to WD-Tagger after the sampling to automatically caption your images for instance.
+
 ## JSPaint
 
 ![JSPaint Nodes example](workflow_jspaint.png "JSPaint Nodes example")

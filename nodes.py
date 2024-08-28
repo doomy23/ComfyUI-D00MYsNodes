@@ -95,9 +95,9 @@ def load_images_with_captions(paths: list):
             logger.error(f"Cannot load {path} because it does not exist.")
     return images, captions
 
-def save_image(path, image_type, image, exif_data=None, quality=100, optimize=True, dpi=300):
+def save_image(path, image_type, image: Image, exif_data=None, quality=100, optimize=True):
     if image_type == 'JPEG':
-        image.save(path, quality=quality, optimize=optimize, dpi=(dpi, dpi))
+        image.save(path, quality=quality, optimize=optimize, dpi=image.info.get('dpi'))
     elif image_type == 'WebP':
         image.save(path, quality=quality, lossless=True, exif=exif_data)
     elif image_type == 'PNG':
