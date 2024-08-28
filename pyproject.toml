@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI_D00MYsNodes"
 description = "Nodes: Images_Converter, Show_Text, Strings_From_List, Save_Text, Save_Images, Random_Images, Load_Images_From_Paths, JSPaint."
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 
 [project.urls]

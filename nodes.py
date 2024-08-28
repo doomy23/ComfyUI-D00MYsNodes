@@ -1,4 +1,5 @@
 import os
+import json
 import time
 from io import BytesIO
 import base64
@@ -6,6 +7,7 @@ import pathlib
 import uuid
 import random
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 import folder_paths
 from comfy.utils import ProgressBar
@@ -93,6 +95,20 @@ def load_images_with_captions(paths: list):
             logger.error(f"Cannot load {path} because it does not exist.")
     return images, captions
 
+def save_image(path, image_type, image, exif_data=None, quality=100, optimize=True):
+    if image_type == 'JPEG':
+        image.save(path, quality=quality, optimize=optimize, dpi=(dpi, dpi))
+    elif image_type == 'WebP':
+        image.save(path, quality=quality, lossless=True, exif=exif_data)
+    elif image_type == 'PNG':
+        image.save(path, pnginfo=exif_data, optimize=optimize)
+    elif exteimage_typension == 'BMP':
+        image.save(path)
+    elif image_type == 'TIFF':
+        image.save(path, quality=quality, optimize=optimize)
+    else:
+        image.save(path, pnginfo=exif_data, optimize=optimize)
+
 
 ################################ Coverter Nodes
 
@@ -139,7 +155,7 @@ class D00MYsImagesConverter:
                 # Resize to 256px square for ICO
                 if convert_to == "ICO":
                     image = image.resize((256, 256), Image.ANTIALIAS)
-                image.save(save_path, convert_to)
+                save_image(save_image, convert_to, image)
                 converted_images_paths.append(save_path)
                 image.close()
             except Exception as e:
@@ -248,13 +264,13 @@ class D00MYsSaveText:
 
     def save_file(self, text: list, filename_prefix: list, images_paths: list, **kwargs):
         filename_prefix = filename_prefix[0]
+        path = None
         if len(images_paths) == 1:
-            image_path = image_path[0]
+            image_path = images_paths[0]
             if len(text) == 1:
                 text = text[0]
             else:
                 text = "\n".join(text)
-            path = None
             if image_path:
                 image_path_obj = pathlib.Path(image_path)
                 image_name = image_path_obj.stem
@@ -317,7 +333,6 @@ class D00MYsSaveImage:
         results = list()
         results_paths = list()
         pbar = ProgressBar(len(images))
-        logger.info(f"{prompt}\n\n{extra_pnginfo}")
         for index, image in enumerate(images):
             try:
                 img = tensor2pil(image)
@@ -329,10 +344,36 @@ class D00MYsSaveImage:
                     num = num+1
                     image_file_name = os.path.join(full_output_folder, f"{filename}_{str(num).zfill(5)}.png")
                 logger.info(f"Saving {image_file_name}")
-                # TODO: Add image metadata
+                # Add image metadata
+                exif_data = None
+                if file_type == 'WebP':
+                    img_exif = img.getexif()
+                    workflow_metadata = ''
+                    prompt_str = ''
+                    if prompt is not None:
+                        prompt_str = json.dumps(prompt)
+                        img_exif[0x010f] = "Prompt:" + prompt_str
+                    if extra_pnginfo is not None:
+                        for x in extra_pnginfo:
+                            if isinstance(x, dict):
+                                for key in x.keys():
+                                    workflow_metadata += json.dumps(x[key])
+                    img_exif[0x010e] = "Workflow:" + workflow_metadata
+                    exif_data = img_exif.tobytes()
+                else:
+                    metadata = PngInfo()
+                    if prompt is not None:
+                        metadata.add_text("prompt", json.dumps(prompt))
+                    if extra_pnginfo is not None:
+                        for x in extra_pnginfo:
+                            if isinstance(x, dict):
+                                for key in x.keys():
+                                    metadata.add_text(key, json.dumps(x[key]))
+                    exif_data = metadata
+                # Resize to 256px square for ICO
                 if file_type == "ICO":
-                    img = img.resize((256, 256), Image.ANTIALIAS)  # Resize to 256px square for ICO
-                img.save(image_file_name, file_type)
+                    img = img.resize((256, 256), Image.ANTIALIAS)
+                save_image(image_file_name, file_type, img, exif_data=exif_data)
                 results.append({
                     "filename": os.path.basename(image_file_name),
                     "subfolder": subfolder,
@@ -341,6 +382,7 @@ class D00MYsSaveImage:
                 results_paths.append(image_file_name)
             except Exception as e:
                 logger.error(f"Cannot save image {image_file_name}: {e}")
+                raise e
             pbar.update_absolute(index+1, len(images))
         if pbar is not None:
             pbar.update_absolute(len(images), len(images))
