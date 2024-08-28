@@ -34,7 +34,7 @@ def split_paths(paths: str):
     return list(set(splited_paths_1 + splited_paths_2))
 
 def load_image(path: str):
-    with Image.open(path, mode="r") as image:
+    with Image.open(path) as image:
         tensor = pil2tensor(image)
         return tensor
 
@@ -98,17 +98,17 @@ def load_images_with_captions(paths: list):
 
 def save_image(path, image_type, image: Image, exif_data=None, quality=100, optimize=True):
     if image_type == 'JPEG':
-        image.save(path, quality=quality, optimize=optimize, dpi=image.info.get('dpi'))
+        image.save(path, image_type, quality=quality, optimize=optimize, dpi=image.info.get('dpi'))
     elif image_type == 'WebP':
-        image.save(path, quality=quality, lossless=True, exif=exif_data)
+        image.save(path, image_type, quality=quality, lossless=True, exif=exif_data)
     elif image_type == 'PNG':
-        image.save(path, pnginfo=exif_data, optimize=optimize)
+        image.save(path, image_type, pnginfo=exif_data, optimize=optimize)
     elif image_type == 'BMP':
-        image.save(path)
+        image.save(path, image_type)
     elif image_type == 'TIFF':
-        image.save(path, quality=quality, optimize=optimize)
+        image.save(path, image_type, quality=quality, optimize=optimize)
     else:
-        image.save(path, pnginfo=exif_data, optimize=optimize)
+        image.save(path, image_type, pnginfo=exif_data, optimize=optimize)
 
 
 ################################ Coverter Nodes
@@ -156,7 +156,7 @@ class D00MYsImagesConverter:
                 # Resize to 256px square for ICO
                 if convert_to == "ICO":
                     image = image.resize((256, 256), Image.ANTIALIAS)
-                save_image(save_image, convert_to, image)
+                save_image(save_path, convert_to, image)
                 converted_images_paths.append(save_path)
                 image.close()
             except Exception as e:
@@ -507,10 +507,7 @@ class D00MYsJSPaint:
             logger.info(f"Saving {filepath}")
             image_pil.save(filepath, "PNG")
             image_pil.close()
-            # Load from temp folder as tensor
-            image_temp = Image.open(filepath, mode="r")
-            image_tensor = pil2tensor(image_temp)
-            return (image_tensor, )
+            return (load_image(filepath), )
         except Exception as e:
             logger.error(f"Cannot decode PNG file: {e}")
             return (None, )
