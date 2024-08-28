@@ -1,4 +1,5 @@
 import os
+import time
 from io import BytesIO
 import base64
 import pathlib
@@ -216,6 +217,45 @@ class D00MYsStringsFromList:
         except Exception as e:
             logger.error(f"An error occured : {e}")
         return (results, )
+    
+
+class D00MYsSaveText:
+    def __init__(self):
+        logger.debug("Init of D00MYsSaveText")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"forceInput": True}),
+                "filename_prefix": ("STRING", {"default": "ComfyUI"})
+            }
+        }
+
+    INPUT_IS_LIST = True    
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("File Path",)
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (False,)
+    FUNCTION = "save_file"
+    CATEGORY = CATEGORY_STRING
+
+    def save_file(self, text: list, filename_prefix: list, **kwargs):
+        logger.info(f"Text to save: {text}")
+        filename_prefix = filename_prefix[0]
+        if len(text) == 1:
+            text = text[0]
+        else:
+            text = "\n".join(text)
+        index = 1
+        path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
+        while os.path.exists(path):
+            index = index + 1
+            path = os.path.join(get_comfy_dir("output"), f"{filename_prefix}_{str(index).zfill(5)}_.txt")
+        with open(path, "w+", encoding="UTF-8") as fp:
+            fp.write(text)
+        logger.info(f"Created file {path}")
+        return (path,)
 
 
 ################################ Images Nodes
@@ -236,6 +276,10 @@ class D00MYsRandomImages:
                 "captions": ("STRING", {"forceInput": True}),
             }
         }
+    
+    @classmethod
+    def IS_CHANGED(s, images, count, captions, **kwargs):
+        return time.time()
     
     INPUT_IS_LIST = True
     RETURN_TYPES = ("IMAGE", "STRING",)
@@ -274,6 +318,10 @@ class D00MYsLoadImagesFromPaths:
                 "load_captions": ("BOOLEAN", {"default": False}),
             }
         }
+    
+    @classmethod
+    def IS_CHANGED(s, paths, load_captions, **kwargs):
+        return time.time()
     
     INPUT_IS_LIST = True
     RETURN_TYPES = ("IMAGE", "STRING",)
@@ -344,6 +392,7 @@ NODE_CLASS_MAPPINGS = {
     "Images_Converter|D00MYs": D00MYsImagesConverter,
     "Show_Text|D00MYs": D00MYsShowText,
     "Strings_From_List|D00MYs": D00MYsStringsFromList,
+    "Save_Text|D00MYs": D00MYsSaveText,
     "Random_Images|D00MYs": D00MYsRandomImages,
     "Load_Images_From_Paths|D00MYs": D00MYsLoadImagesFromPaths,
     "JSPaint|D00MYs": D00MYsJSPaint,
@@ -353,6 +402,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Images_Converter|D00MYs": "🔷 Images Converter",
     "Show_Text|D00MYs": "📃 Show Text Value",
     "Strings_From_List|D00MYs": "📎 Strings from List",
+    "Save_Text|D00MYs": "💾 Save Text",
     "Random_Images|D00MYs": "🔀 Random Images",
     "Load_Images_From_Paths|D00MYs": "📁 Load Images from Paths",
     "JSPaint|D00MYs": "✏️ JSPaint Node",
