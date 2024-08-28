@@ -4,6 +4,7 @@ import torch
 import numpy
 import pathlib
 from PIL import Image
+
 from server import PromptServer
 
 IMAGES_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
@@ -48,12 +49,17 @@ def list_images_paths(directory: str):
         return []
     
 # Stolen from : https://github.com/GeekyGhost/ComfyUI-GeekyRemB/blob/SketchUITest/scripts/GeekyRembv2.py
-def pil2tensor(image):
-    np_image = numpy.array(image).astype(numpy.float32) / 255.0
-    if np_image.ndim == 2:  # If it's a grayscale image (mask)
-        np_image = np_image[None, None, ...]  # Add batch and channel dimensions
-    elif np_image.ndim == 3:  # If it's an RGB image
-        np_image = np_image[None, ...]  # Add batch dimension
+def pil2tensor(image: Image):
+    np_image = numpy.asarray(image)
+    if np_image.ndim == 2:
+        # Convert grayscale image to RGB
+        image_rgb = image.convert('RGB')
+        np_image = numpy.asarray(image_rgb)
+        np_image = numpy.array(np_image).astype(numpy.uint8)
+        np_image = np_image[None, ...]
+    elif np_image.ndim == 3:
+        np_image = numpy.array(np_image * 255).astype(numpy.uint8)
+        np_image = np_image[None, ...]
     return torch.from_numpy(np_image)
 
 def tensor2pil(tensor):

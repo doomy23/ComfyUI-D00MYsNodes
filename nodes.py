@@ -34,8 +34,9 @@ def split_paths(paths: str):
     return list(set(splited_paths_1 + splited_paths_2))
 
 def load_image(path: str):
-    image_temp = Image.open(path, mode="r")
-    return pil2tensor(image_temp)
+    with Image.open(path, mode="r") as image:
+        tensor = pil2tensor(image)
+        return tensor
 
 def load_images(paths: list):
     results = []
