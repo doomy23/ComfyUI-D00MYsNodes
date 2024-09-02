@@ -172,7 +172,7 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type, positive_prompt
     # logger.info(f"{text}")
     for key in prompt_data.keys():
         node = prompt_data[key]
-        logger.info(f"node {key} = {node}")
+        # logger.info(f"node {key} = {node}")
         if "inputs" in node.keys():
             for input_key in node["inputs"].keys():
                 input = node["inputs"][input_key]
