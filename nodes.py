@@ -1,5 +1,7 @@
 import os
 import json
+import piexif
+import piexif.helper
 import time
 from io import BytesIO
 import base64
@@ -14,6 +16,7 @@ from comfy.utils import ProgressBar
 
 from .logger import logger
 from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor, tensor2pil, tensor2numpy, IMAGES_TYPES
+from .metadata_extractor import PromptMetadataExtractor, get_sha256
 
 
 CATEGORY_STRING = "💀 D00MYs"
@@ -27,6 +30,15 @@ CONVERT_TO_TYPES_EXT = {
     "WebP": ".webp", 
     "ICO": ".ico",
 }
+
+def handle_whitespace(string: str):
+    return string.strip().replace("\n", " ").replace("\r", " ").replace("\t", " ")
+
+def parse_checkpoint_name(ckpt_name):
+    return os.path.basename(ckpt_name)
+
+def parse_checkpoint_name_without_extension(ckpt_name):
+    return os.path.splitext(parse_checkpoint_name(ckpt_name))[0]
 
 def split_paths(paths: str):
     splited_paths_1 = paths.split(",")
@@ -179,7 +191,7 @@ class D00MYsShowText:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"forceInput": True}),
+                "text": ("STRING", {"forceInput": True, "multiline": True}),
                 "split_lines": ("BOOLEAN", {"default": False}),
             }
         }
@@ -213,7 +225,7 @@ class D00MYsStringsFromList:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"forceInput": True}),
+                "text": ("STRING", {"forceInput": True, "multiline": True}),
                 "index": ("INT", {"default": 0}),
                 "length": ("INT", {"default": 1}),
             }
@@ -247,7 +259,7 @@ class D00MYsSaveText:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"forceInput": True}),
+                "text": ("STRING", {"forceInput": True, "multiline": True}),
                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
             },
             "optional": {
@@ -308,6 +320,27 @@ class D00MYsSaveImage:
     def __init__(self):
         self.type = "output"
         logger.debug("Init of D00MYsSaveImage")
+        # Taken from : https://github.com/alexopus/ComfyUI-Image-Saver/blob/main/nodes.py
+        self.civitai_sampler_map = {
+            'euler_ancestral': 'Euler a',
+            'euler': 'Euler',
+            'lms': 'LMS',
+            'heun': 'Heun',
+            'dpm_2': 'DPM2',
+            'dpm_2_ancestral': 'DPM2 a',
+            'dpmpp_2s_ancestral': 'DPM++ 2S a',
+            'dpmpp_2m': 'DPM++ 2M',
+            'dpmpp_sde': 'DPM++ SDE',
+            'dpmpp_2m_sde': 'DPM++ 2M SDE',
+            'dpmpp_3m_sde': 'DPM++ 3M SDE',
+            'dpm_fast': 'DPM fast',
+            'dpm_adaptive': 'DPM adaptive',
+            'ddim': 'DDIM',
+            'plms': 'PLMS',
+            'uni_pc_bh2': 'UniPC',
+            'uni_pc': 'UniPC',
+            'lcm': 'LCM',
+        }
 
     @classmethod
     def INPUT_TYPES(s):
@@ -316,9 +349,27 @@ class D00MYsSaveImage:
                 "images": ("IMAGE", {"forceInput": True}),
                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
                 "file_type":  (CONVERT_TO_TYPES, ),
+                "save_metadata": ("BOOLEAN", {"default": True}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
+    
+    def get_civitai_sampler_name(self, sampler_name, scheduler):
+        # based on: https://github.com/civitai/civitai/blob/main/src/server/common/constants.ts#L122
+        if sampler_name in self.civitai_sampler_map:
+            civitai_name = self.civitai_sampler_map[sampler_name]
+
+            if scheduler == "karras":
+                civitai_name += " Karras"
+            elif scheduler == "exponential":
+                civitai_name += " Exponential"
+
+            return civitai_name
+        else:
+            if scheduler != 'normal':
+                return f"{sampler_name}_{scheduler}"
+            else:
+                return sampler_name
     
     INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING",)
@@ -328,9 +379,10 @@ class D00MYsSaveImage:
     OUTPUT_IS_LIST = (True,)
     CATEGORY = CATEGORY_STRING
 
-    def save_image(self, images: list, filename_prefix: list, file_type: list, prompt, extra_pnginfo, **kwargs):
+    def save_image(self, images: list, filename_prefix: list, file_type: list, save_metadata: list, prompt, extra_pnginfo, **kwargs):
         filename_prefix = filename_prefix[0]
         file_type = file_type[0]
+        save_metadata = save_metadata[0]
         results = list()
         results_paths = list()
         pbar = ProgressBar(len(images))
@@ -345,36 +397,115 @@ class D00MYsSaveImage:
                     num = num+1
                     image_file_name = os.path.join(full_output_folder, f"{filename}_{str(num).zfill(5)}.png")
                 logger.info(f"Saving {image_file_name}")
-                # Add image metadata
-                exif_data = None
-                if file_type == 'WebP':
-                    img_exif = img.getexif()
-                    workflow_metadata = ''
-                    prompt_str = ''
-                    if prompt is not None:
-                        prompt_str = json.dumps(prompt)
-                        img_exif[0x010f] = "Prompt:" + prompt_str
-                    if extra_pnginfo is not None:
-                        for x in extra_pnginfo:
-                            if isinstance(x, dict):
-                                for key in x.keys():
-                                    workflow_metadata += json.dumps(x[key])
-                    img_exif[0x010e] = "Workflow:" + workflow_metadata
-                    exif_data = img_exif.tobytes()
-                else:
-                    metadata = PngInfo()
-                    if prompt is not None:
-                        metadata.add_text("prompt", json.dumps(prompt))
-                    if extra_pnginfo is not None:
-                        for x in extra_pnginfo:
-                            if isinstance(x, dict):
-                                for key in x.keys():
-                                    metadata.add_text(key, json.dumps(x[key]))
-                    exif_data = metadata
                 # Resize to 256px square for ICO
                 if file_type == "ICO":
                     img = img.resize((256, 256), Image.ANTIALIAS)
-                save_image(image_file_name, file_type, img, exif_data=exif_data)
+                metadata = None
+                exif_bytes = None
+                # Extract the metadata
+                if save_metadata:
+                    checkpoint = None
+                    steps = None
+                    sampler = None
+                    seed = None
+                    cfg = None
+                    positive = None
+                    negative = None
+                    embeddings = None
+                    loras = None
+                    text = {}
+                    prompt_data = prompt[0]
+                    # logger.info(f"prompt = {prompt_data}")
+                    for key in prompt_data.keys():
+                        node = prompt_data[key]
+                        # logger.info(f"node = {node}")
+                        if "inputs" in node.keys():
+                            for input_key in node["inputs"].keys():
+                                input = node["inputs"][input_key]
+                                try:
+                                    if "base_ckpt_name" in input_key and input != "None":
+                                        # Found the checkpoint
+                                        checkpoint = input
+                                    if "text" == input_key:
+                                        # Save text in case positive or negative
+                                        text[key] = input
+                                    if "steps" == input_key:
+                                        steps = input
+                                    if "seed" == input_key:
+                                        seed = input
+                                    if "cfg" == input_key:
+                                        cfg = input
+                                    if "sampler_name" == input_key:
+                                        sampler = self.civitai_sampler_map.get(input.replace("_gpu", "").replace("_cfg_pp", ""), None)
+                                    if "positive" == input_key:
+                                        # Check potential positive 
+                                        if isinstance(input, list): 
+                                            id = input[0]
+                                            if id in text.keys():
+                                                positive = text[id]
+                                    if "negative" == input_key:
+                                        # Check potential positive 
+                                        if isinstance(input, list): 
+                                            id = input[0]
+                                            if id in text.keys():
+                                                negative = text[id]
+                                except Exception as e:
+                                    logger.error(f"Don't know what to do with metadata {input}: {e}")
+                    if positive:
+                        negative = negative if negative else ""
+                        metadata_extractor = PromptMetadataExtractor([positive, negative])
+                        embeddings = metadata_extractor.get_embeddings()
+                        loras = metadata_extractor.get_loras()
+                    else:
+                        positive = ""
+                        negative = ""
+                    # Save the metadata
+                    logger.info({
+                        "checkpoint": checkpoint,
+                        "steps": steps,
+                        "sampler": sampler,
+                        "seed": seed,
+                        "cfg": cfg,
+                        "positive": positive,
+                        "negative": negative,
+                        "embeddings": embeddings,
+                        "loras": loras
+                    })
+                    if checkpoint:
+                        modelhash = get_sha256(checkpoint)[:10]
+                    else:
+                        modelhash = ""
+                    extension_hashes = json.dumps(embeddings | loras | { "model": modelhash })
+                    basemodelname = parse_checkpoint_name_without_extension(checkpoint) if checkpoint else None
+                    positive_a111_params = handle_whitespace(positive)
+                    negative_a111_params = f"\nNegative prompt: {handle_whitespace(negative)}"
+                    width = img.width
+                    height = img.height
+                    step_str = f"Steps: {steps}" if steps else ""
+                    sampler_str = f"nSampler: {sampler}" if sampler else ""
+                    cfg_str = f"CFG scale: {cfg}" if cfg else ""
+                    seed_str = f"Seed: {seed}" if seed else ""
+                    size_str = f"Size: {width}x{height}"
+                    all_str = " ,".join([step_str, sampler_str, cfg_str, seed_str, size_str])
+                    a111_params = f"{positive_a111_params}{negative_a111_params}\n{all_str}, Model hash: {modelhash}, Model: {basemodelname}, Hashes: {extension_hashes}, Version: ComfyUI"
+                    logger.info(a111_params)
+                    if file_type == 'PNG':
+                        metadata = PngInfo()
+                        metadata.add_text("parameters", a111_params)
+                        if prompt_data is not None:
+                            metadata.add_text("prompt", json.dumps(prompt_data))
+                        if extra_pnginfo is not None:
+                            for x in extra_pnginfo[0]:
+                                metadata.add_text(x, json.dumps(extra_pnginfo[0][x]))
+                    else:
+                        exif_bytes = piexif.dump({
+                            "Exif": {
+                                piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(a111_params, encoding="unicode")
+                            },
+                        })
+                save_image(image_file_name, file_type, img, exif_data=metadata)
+                if exif_bytes:
+                    piexif.insert(exif_bytes, image_file_name)
                 results.append({
                     "filename": os.path.basename(image_file_name),
                     "subfolder": subfolder,
