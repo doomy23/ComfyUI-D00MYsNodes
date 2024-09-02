@@ -404,7 +404,7 @@ class D00MYsSaveText:
                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
             },
             "optional": {
-                "images_paths": ("STRING", {"forceInput": True, "default": []}),
+                "images_paths": ("STRING", {"default": ""}),
             }
         }
 
@@ -472,8 +472,8 @@ class D00MYsSaveImage:
                 "save_metadata": ("BOOLEAN", {"default": True}),
             },
             "optional": {
-                "opt_positive_prompt": ("STRING", {"forceInput": True, "default": []}),
-                "opt_negative_prompt": ("STRING", {"forceInput": True, "default": []}),
+                "opt_positive_prompt": ("STRING", {"default": ""}),
+                "opt_negative_prompt": ("STRING", {"default": ""}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -498,6 +498,10 @@ class D00MYsSaveImage:
             try:
                 positive_prompt = opt_positive_prompt[index] if index < len(opt_positive_prompt) else None
                 negative_prompt = opt_negative_prompt[index] if index < len(opt_negative_prompt) else None
+                if index > 0 and not positive_prompt and len(opt_positive_prompt) > 0:
+                    positive_prompt = opt_positive_prompt[0]
+                if index > 0 and not negative_prompt and len(opt_negative_prompt) > 0:
+                    negative_prompt = opt_negative_prompt[0]
                 img = tensor2pil(image)
                 full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(filename_prefix, get_comfy_dir("output"), 
                                                                                                             image.shape[1], image.shape[0])
@@ -549,7 +553,7 @@ class D00MYsRandomImages:
                 "count": ("INT", {"default": 1}),
             },
             "optional": {
-                "captions": ("STRING", {"forceInput": True, "default": []}),
+                "captions": ("STRING", {"default": ""}),
             }
         }
     
@@ -631,7 +635,6 @@ class D00MYsJSPaint:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "optional": {},
             "required": {
                 "image": ("JSPAINT", {"default": None},),
             },
