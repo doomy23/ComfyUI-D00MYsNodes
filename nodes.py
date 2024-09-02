@@ -425,7 +425,7 @@ class D00MYsSaveImage:
                                 try:
                                     if "base_ckpt_name" in input_key and input != "None":
                                         # Found the checkpoint
-                                        checkpoint = input
+                                        checkpoint = os.path.join(get_comfy_dir("models/checkpoints"), input)
                                     if "text" == input_key:
                                         # Save text in case positive or negative
                                         text[key] = input
@@ -453,9 +453,12 @@ class D00MYsSaveImage:
                                     logger.error(f"Don't know what to do with metadata {input}: {e}")
                     if positive:
                         negative = negative if negative else ""
-                        metadata_extractor = PromptMetadataExtractor([positive, negative])
-                        embeddings = metadata_extractor.get_embeddings()
-                        loras = metadata_extractor.get_loras()
+                        try:
+                            metadata_extractor = PromptMetadataExtractor([positive, negative])
+                            embeddings = metadata_extractor.get_embeddings()
+                            loras = metadata_extractor.get_loras()
+                        except Exception as e:
+                            logger.error(f"Error during metadata extraction: {e}")
                     else:
                         positive = ""
                         negative = ""
