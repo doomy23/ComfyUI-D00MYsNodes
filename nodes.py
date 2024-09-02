@@ -159,15 +159,26 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
     # logger.info(f"prompt = {prompt_data}")
     for key in prompt_data.keys():
         node = prompt_data[key]
-        logger.info(f"node = {node}")
+        if "inputs" in node.keys():
+            if "text" == input_key:
+                if isinstance(input, list): 
+                    id = input[0]
+                    if id in text.keys():
+                        text[key] = text[id]
+                else:
+                    text[key] = input
+            if "text2" == input_key:
+                text[key] = input
+    # logger.info(f"{text}")
+    for key in prompt_data.keys():
+        node = prompt_data[key]
+        logger.info(f"node {key} = {node}")
         if "inputs" in node.keys():
             for input_key in node["inputs"].keys():
                 input = node["inputs"][input_key]
                 try:
                     if "base_ckpt_name" in input_key and input != "None":
                         checkpoint = os.path.join(get_comfy_dir("models/checkpoints"), input)
-                    if "text" == input_key:
-                        text[key] = input
                     if "steps" == input_key:
                         steps = input
                     if "seed" == input_key:
@@ -182,12 +193,20 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
                             id = input[0]
                             if id in text.keys():
                                 positive = text[id]
+                            else:
+                                input_num = input[1]
+                                input_key = prompt_data[id]["inputs"].keys()[input_num]
+                                positive = prompt_data[id]["inputs"][input_key]
                     if "negative" == input_key:
                         # Check potential negative 
                         if isinstance(input, list): 
                             id = input[0]
                             if id in text.keys():
                                 negative = text[id]
+                            else:
+                                input_num = input[1]
+                                input_key = prompt_data[id]["inputs"].keys()[input_num]
+                                negative = prompt_data[id]["inputs"][input_key]
                 except Exception as e:
                     logger.error(f"Don't know what to do with metadata {input}: {e}")
     if positive:
@@ -201,8 +220,10 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
     else:
         positive = ""
         negative = ""
+        embeddings = {}
+        loras = {}
     # Save the metadata
-    logger.info({
+    logger.debug({
         "checkpoint": checkpoint,
         "steps": steps,
         "sampler": sampler,
