@@ -143,7 +143,7 @@ def save_image(path, image_type, image: Image, exif_data=None, quality=100, opti
     else:
         image.save(path, image_type, pnginfo=exif_data, optimize=optimize)
 
-def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
+def extract_metadata(prompt_data, extra_pnginfo, img, file_type, positive_prompt=None, negative_prompt=None):
     metadata = None
     exif_bytes = None
     checkpoint = None
@@ -187,13 +187,13 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
                         cfg = input
                     if "sampler_name" == input_key:
                         sampler = CIVITAI_SAMPLER_MAP.get(input.replace("_gpu", "").replace("_cfg_pp", ""), None)
-                    if "positive" == input_key:
+                    if "positive" == input_key and not positive_prompt:
                         # Check potential positive 
                         if isinstance(input, list): 
                             id = input[0]
                             if id in text.keys():
                                 positive = text[id]
-                    if "negative" == input_key:
+                    if "negative" == input_key and not negative_prompt:
                         # Check potential negative 
                         if isinstance(input, list): 
                             id = input[0]
@@ -201,6 +201,10 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
                                 negative = text[id]
                 except Exception as e:
                     logger.error(f"Don't know what to do with metadata {input}: {e}", e)
+    if positive_prompt:
+        positive = positive_prompt
+    if negative_prompt:
+        negative = negative_prompt
     if positive:
         negative = negative if negative else ""
         try:
@@ -215,7 +219,7 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
         embeddings = {}
         loras = {}
     # Save the metadata
-    logger.debug({
+    logger.info({
         "checkpoint": checkpoint,
         "steps": steps,
         "sampler": sampler,
@@ -467,6 +471,10 @@ class D00MYsSaveImage:
                 "file_type":  (CONVERT_TO_TYPES, ),
                 "save_metadata": ("BOOLEAN", {"default": True}),
             },
+            "optional": {
+                "opt_positive_prompt": ("STRING", {"forceInput": True}),
+                "opt_negative_prompt": ("STRING", {"forceInput": True}),
+            },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
     
@@ -478,7 +486,8 @@ class D00MYsSaveImage:
     OUTPUT_IS_LIST = (True,)
     CATEGORY = CATEGORY_STRING
 
-    def save_image(self, images: list, filename_prefix: list, file_type: list, save_metadata: list, prompt, extra_pnginfo, **kwargs):
+    def save_image(self, images: list, filename_prefix: list, file_type: list, save_metadata: list, opt_positive_prompt: list, 
+                   opt_negative_prompt: list, prompt, extra_pnginfo, **kwargs):
         filename_prefix = filename_prefix[0]
         file_type = file_type[0]
         save_metadata = save_metadata[0]
@@ -487,6 +496,8 @@ class D00MYsSaveImage:
         pbar = ProgressBar(len(images))
         for index, image in enumerate(images):
             try:
+                positive_prompt = opt_positive_prompt[index] if index < len(opt_positive_prompt) else None
+                negative_prompt = opt_negative_prompt[index] if index < len(opt_negative_prompt) else None
                 img = tensor2pil(image)
                 full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(filename_prefix, get_comfy_dir("output"), 
                                                                                                             image.shape[1], image.shape[0])
@@ -504,7 +515,7 @@ class D00MYsSaveImage:
                 # Extract the metadata
                 if save_metadata:
                     try:
-                        metadata, exif_bytes = extract_metadata(prompt[0], extra_pnginfo[0], img, file_type)
+                        metadata, exif_bytes = extract_metadata(prompt[0], extra_pnginfo[0], img, file_type, positive_prompt=positive_prompt, negative_prompt=negative_prompt)
                     except Exception as e:
                         logger.error(f"Cannot save image metadata: {e}", e)
                 save_image(image_file_name, file_type, img, exif_data=metadata)
