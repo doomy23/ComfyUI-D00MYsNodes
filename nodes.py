@@ -15,7 +15,7 @@ import folder_paths
 from comfy.utils import ProgressBar
 
 from .logger import logger
-from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor, tensor2pil, tensor2numpy, IMAGES_TYPES
+from .utils import get_comfy_dir, validate_load_images, list_images_paths, pil2tensor, tensor2pil, IMAGES_TYPES
 from .metadata_extractor import PromptMetadataExtractor, get_sha256
 
 
@@ -29,6 +29,27 @@ CONVERT_TO_TYPES_EXT = {
     "TIFF": ".tiff", 
     "WebP": ".webp", 
     "ICO": ".ico",
+}
+# Taken from : https://github.com/alexopus/ComfyUI-Image-Saver/blob/main/nodes.py
+CIVITAI_SAMPLER_MAP = {
+    'euler_ancestral': 'Euler a',
+    'euler': 'Euler',
+    'lms': 'LMS',
+    'heun': 'Heun',
+    'dpm_2': 'DPM2',
+    'dpm_2_ancestral': 'DPM2 a',
+    'dpmpp_2s_ancestral': 'DPM++ 2S a',
+    'dpmpp_2m': 'DPM++ 2M',
+    'dpmpp_sde': 'DPM++ SDE',
+    'dpmpp_2m_sde': 'DPM++ 2M SDE',
+    'dpmpp_3m_sde': 'DPM++ 3M SDE',
+    'dpm_fast': 'DPM fast',
+    'dpm_adaptive': 'DPM adaptive',
+    'ddim': 'DDIM',
+    'plms': 'PLMS',
+    'uni_pc_bh2': 'UniPC',
+    'uni_pc': 'UniPC',
+    'lcm': 'LCM',
 }
 
 def handle_whitespace(string: str):
@@ -121,6 +142,109 @@ def save_image(path, image_type, image: Image, exif_data=None, quality=100, opti
         image.save(path, image_type, quality=quality, optimize=optimize)
     else:
         image.save(path, image_type, pnginfo=exif_data, optimize=optimize)
+
+def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
+    metadata = None
+    exif_bytes = None
+    checkpoint = None
+    steps = None
+    sampler = None
+    seed = None
+    cfg = None
+    positive = None
+    negative = None
+    embeddings = None
+    loras = None
+    text = {}
+    # logger.info(f"prompt = {prompt_data}")
+    for key in prompt_data.keys():
+        node = prompt_data[key]
+        logger.info(f"node = {node}")
+        if "inputs" in node.keys():
+            for input_key in node["inputs"].keys():
+                input = node["inputs"][input_key]
+                try:
+                    if "base_ckpt_name" in input_key and input != "None":
+                        checkpoint = os.path.join(get_comfy_dir("models/checkpoints"), input)
+                    if "text" == input_key:
+                        text[key] = input
+                    if "steps" == input_key:
+                        steps = input
+                    if "seed" == input_key:
+                        seed = input
+                    if "cfg" == input_key:
+                        cfg = input
+                    if "sampler_name" == input_key:
+                        sampler = CIVITAI_SAMPLER_MAP.get(input.replace("_gpu", "").replace("_cfg_pp", ""), None)
+                    if "positive" == input_key:
+                        # Check potential positive 
+                        if isinstance(input, list): 
+                            id = input[0]
+                            if id in text.keys():
+                                positive = text[id]
+                    if "negative" == input_key:
+                        # Check potential negative 
+                        if isinstance(input, list): 
+                            id = input[0]
+                            if id in text.keys():
+                                negative = text[id]
+                except Exception as e:
+                    logger.error(f"Don't know what to do with metadata {input}: {e}")
+    if positive:
+        negative = negative if negative else ""
+        try:
+            metadata_extractor = PromptMetadataExtractor([positive, negative])
+            embeddings = metadata_extractor.get_embeddings()
+            loras = metadata_extractor.get_loras()
+        except Exception as e:
+            logger.error(f"Error during metadata extraction: {e}")
+    else:
+        positive = ""
+        negative = ""
+    # Save the metadata
+    logger.info({
+        "checkpoint": checkpoint,
+        "steps": steps,
+        "sampler": sampler,
+        "seed": seed,
+        "cfg": cfg,
+        "positive": positive,
+        "negative": negative,
+        "embeddings": embeddings,
+        "loras": loras
+    })
+    if checkpoint:
+        modelhash = get_sha256(checkpoint)[:10]
+    else:
+        modelhash = ""
+    extension_hashes = json.dumps(embeddings | loras | { "model": modelhash })
+    basemodelname = parse_checkpoint_name_without_extension(checkpoint) if checkpoint else None
+    positive_a111_params = handle_whitespace(positive)
+    negative_a111_params = f"\nNegative prompt: {handle_whitespace(negative)}"
+    width = img.width
+    height = img.height
+    step_str = f"Steps: {steps}" if steps else ""
+    sampler_str = f"Sampler: {sampler}" if sampler else ""
+    cfg_str = f"CFG scale: {cfg}" if cfg else ""
+    seed_str = f"Seed: {seed}" if seed else ""
+    size_str = f"Size: {width}x{height}"
+    all_str = " ,".join([step_str, sampler_str, cfg_str, seed_str, size_str])
+    a111_params = f"{positive_a111_params}{negative_a111_params}\n{all_str}, Model hash: {modelhash}, Model: {basemodelname}, Hashes: {extension_hashes}, Version: ComfyUI"
+    if file_type == 'PNG':
+        metadata = PngInfo()
+        metadata.add_text("parameters", a111_params)
+        if prompt_data is not None:
+            metadata.add_text("prompt", json.dumps(prompt_data))
+        if extra_pnginfo is not None:
+            for x in extra_pnginfo:
+                metadata.add_text(x, json.dumps(extra_pnginfo[x]))
+    else:
+        exif_bytes = piexif.dump({
+            "Exif": {
+                piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(a111_params, encoding="unicode")
+            },
+        })
+    return metadata, exif_bytes
 
 
 ################################ Coverter Nodes
@@ -320,27 +444,6 @@ class D00MYsSaveImage:
     def __init__(self):
         self.type = "output"
         logger.debug("Init of D00MYsSaveImage")
-        # Taken from : https://github.com/alexopus/ComfyUI-Image-Saver/blob/main/nodes.py
-        self.civitai_sampler_map = {
-            'euler_ancestral': 'Euler a',
-            'euler': 'Euler',
-            'lms': 'LMS',
-            'heun': 'Heun',
-            'dpm_2': 'DPM2',
-            'dpm_2_ancestral': 'DPM2 a',
-            'dpmpp_2s_ancestral': 'DPM++ 2S a',
-            'dpmpp_2m': 'DPM++ 2M',
-            'dpmpp_sde': 'DPM++ SDE',
-            'dpmpp_2m_sde': 'DPM++ 2M SDE',
-            'dpmpp_3m_sde': 'DPM++ 3M SDE',
-            'dpm_fast': 'DPM fast',
-            'dpm_adaptive': 'DPM adaptive',
-            'ddim': 'DDIM',
-            'plms': 'PLMS',
-            'uni_pc_bh2': 'UniPC',
-            'uni_pc': 'UniPC',
-            'lcm': 'LCM',
-        }
 
     @classmethod
     def INPUT_TYPES(s):
@@ -353,23 +456,6 @@ class D00MYsSaveImage:
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
-    
-    def get_civitai_sampler_name(self, sampler_name, scheduler):
-        # based on: https://github.com/civitai/civitai/blob/main/src/server/common/constants.ts#L122
-        if sampler_name in self.civitai_sampler_map:
-            civitai_name = self.civitai_sampler_map[sampler_name]
-
-            if scheduler == "karras":
-                civitai_name += " Karras"
-            elif scheduler == "exponential":
-                civitai_name += " Exponential"
-
-            return civitai_name
-        else:
-            if scheduler != 'normal':
-                return f"{sampler_name}_{scheduler}"
-            else:
-                return sampler_name
     
     INPUT_IS_LIST = True
     RETURN_TYPES = ("STRING",)
@@ -404,108 +490,7 @@ class D00MYsSaveImage:
                 exif_bytes = None
                 # Extract the metadata
                 if save_metadata:
-                    checkpoint = None
-                    steps = None
-                    sampler = None
-                    seed = None
-                    cfg = None
-                    positive = None
-                    negative = None
-                    embeddings = None
-                    loras = None
-                    text = {}
-                    prompt_data = prompt[0]
-                    # logger.info(f"prompt = {prompt_data}")
-                    for key in prompt_data.keys():
-                        node = prompt_data[key]
-                        # logger.info(f"node = {node}")
-                        if "inputs" in node.keys():
-                            for input_key in node["inputs"].keys():
-                                input = node["inputs"][input_key]
-                                try:
-                                    if "base_ckpt_name" in input_key and input != "None":
-                                        # Found the checkpoint
-                                        checkpoint = os.path.join(get_comfy_dir("models/checkpoints"), input)
-                                    if "text" == input_key:
-                                        # Save text in case positive or negative
-                                        text[key] = input
-                                    if "steps" == input_key:
-                                        steps = input
-                                    if "seed" == input_key:
-                                        seed = input
-                                    if "cfg" == input_key:
-                                        cfg = input
-                                    if "sampler_name" == input_key:
-                                        sampler = self.civitai_sampler_map.get(input.replace("_gpu", "").replace("_cfg_pp", ""), None)
-                                    if "positive" == input_key:
-                                        # Check potential positive 
-                                        if isinstance(input, list): 
-                                            id = input[0]
-                                            if id in text.keys():
-                                                positive = text[id]
-                                    if "negative" == input_key:
-                                        # Check potential positive 
-                                        if isinstance(input, list): 
-                                            id = input[0]
-                                            if id in text.keys():
-                                                negative = text[id]
-                                except Exception as e:
-                                    logger.error(f"Don't know what to do with metadata {input}: {e}")
-                    if positive:
-                        negative = negative if negative else ""
-                        try:
-                            metadata_extractor = PromptMetadataExtractor([positive, negative])
-                            embeddings = metadata_extractor.get_embeddings()
-                            loras = metadata_extractor.get_loras()
-                        except Exception as e:
-                            logger.error(f"Error during metadata extraction: {e}")
-                    else:
-                        positive = ""
-                        negative = ""
-                    # Save the metadata
-                    logger.info({
-                        "checkpoint": checkpoint,
-                        "steps": steps,
-                        "sampler": sampler,
-                        "seed": seed,
-                        "cfg": cfg,
-                        "positive": positive,
-                        "negative": negative,
-                        "embeddings": embeddings,
-                        "loras": loras
-                    })
-                    if checkpoint:
-                        modelhash = get_sha256(checkpoint)[:10]
-                    else:
-                        modelhash = ""
-                    extension_hashes = json.dumps(embeddings | loras | { "model": modelhash })
-                    basemodelname = parse_checkpoint_name_without_extension(checkpoint) if checkpoint else None
-                    positive_a111_params = handle_whitespace(positive)
-                    negative_a111_params = f"\nNegative prompt: {handle_whitespace(negative)}"
-                    width = img.width
-                    height = img.height
-                    step_str = f"Steps: {steps}" if steps else ""
-                    sampler_str = f"nSampler: {sampler}" if sampler else ""
-                    cfg_str = f"CFG scale: {cfg}" if cfg else ""
-                    seed_str = f"Seed: {seed}" if seed else ""
-                    size_str = f"Size: {width}x{height}"
-                    all_str = " ,".join([step_str, sampler_str, cfg_str, seed_str, size_str])
-                    a111_params = f"{positive_a111_params}{negative_a111_params}\n{all_str}, Model hash: {modelhash}, Model: {basemodelname}, Hashes: {extension_hashes}, Version: ComfyUI"
-                    logger.info(a111_params)
-                    if file_type == 'PNG':
-                        metadata = PngInfo()
-                        metadata.add_text("parameters", a111_params)
-                        if prompt_data is not None:
-                            metadata.add_text("prompt", json.dumps(prompt_data))
-                        if extra_pnginfo is not None:
-                            for x in extra_pnginfo[0]:
-                                metadata.add_text(x, json.dumps(extra_pnginfo[0][x]))
-                    else:
-                        exif_bytes = piexif.dump({
-                            "Exif": {
-                                piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(a111_params, encoding="unicode")
-                            },
-                        })
+                    metadata, exif_bytes = extract_metadata(prompt[0], extra_pnginfo[0], img, file_type)
                 save_image(image_file_name, file_type, img, exif_data=metadata)
                 if exif_bytes:
                     piexif.insert(exif_bytes, image_file_name)
