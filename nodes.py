@@ -195,22 +195,14 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
                             id = input[0]
                             if id in text.keys():
                                 positive = text[id]
-                            else:
-                                input_num = input[1]
-                                input_key = prompt_data[id]["inputs"].keys()[input_num]
-                                positive = prompt_data[id]["inputs"][input_key]
                     if "negative" == input_key:
                         # Check potential negative 
                         if isinstance(input, list): 
                             id = input[0]
                             if id in text.keys():
                                 negative = text[id]
-                            else:
-                                input_num = input[1]
-                                input_key = prompt_data[id]["inputs"].keys()[input_num]
-                                negative = prompt_data[id]["inputs"][input_key]
                 except Exception as e:
-                    logger.error(f"Don't know what to do with metadata {input}: {e}")
+                    logger.error(f"Don't know what to do with metadata {input}: {e}", e)
     if positive:
         negative = negative if negative else ""
         try:
@@ -218,7 +210,7 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
             embeddings = metadata_extractor.get_embeddings()
             loras = metadata_extractor.get_loras()
         except Exception as e:
-            logger.error(f"Error during metadata extraction: {e}")
+            logger.error(f"Error during metadata extraction: {e}", e)
     else:
         positive = ""
         negative = ""
@@ -513,7 +505,10 @@ class D00MYsSaveImage:
                 exif_bytes = None
                 # Extract the metadata
                 if save_metadata:
-                    metadata, exif_bytes = extract_metadata(prompt[0], extra_pnginfo[0], img, file_type)
+                    try:
+                        metadata, exif_bytes = extract_metadata(prompt[0], extra_pnginfo[0], img, file_type)
+                    except Exception as e:
+                        logger.error(f"Cannot save image metadata: {e}", e)
                 save_image(image_file_name, file_type, img, exif_data=metadata)
                 if exif_bytes:
                     piexif.insert(exif_bytes, image_file_name)
