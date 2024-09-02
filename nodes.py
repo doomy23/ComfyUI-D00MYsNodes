@@ -160,15 +160,17 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
     for key in prompt_data.keys():
         node = prompt_data[key]
         if "inputs" in node.keys():
-            if "text" == input_key:
-                if isinstance(input, list): 
-                    id = input[0]
-                    if id in text.keys():
-                        text[key] = text[id]
-                else:
+            for input_key in node["inputs"].keys():
+                input = node["inputs"][input_key]
+                if "text" == input_key:
+                    if isinstance(input, list): 
+                        id = input[0]
+                        if id in text.keys():
+                            text[key] = text[id]
+                    else:
+                        text[key] = input
+                if "text2" == input_key:
                     text[key] = input
-            if "text2" == input_key:
-                text[key] = input
     # logger.info(f"{text}")
     for key in prompt_data.keys():
         node = prompt_data[key]
