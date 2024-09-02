@@ -169,7 +169,7 @@ def extract_metadata(prompt_data, extra_pnginfo, img, file_type):
                             text[key] = text[id]
                     else:
                         text[key] = input
-                if "text2" == input_key:
+                if "text2" == input_key:  # For Show Text outputs
                     text[key] = input
     # logger.info(f"{text}")
     for key in prompt_data.keys():
