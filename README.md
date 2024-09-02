@@ -31,6 +31,15 @@ The `filename_prefix` is ignored for the `Save Text` node because we are passing
 It will take the same filename name as the image.
 N.B. In this example I just do preprocessing on the image but it can be used in various ways; connect it to WD-Tagger after the sampling to automatically caption your images for instance.
 
+## Save Images (with Metadata)
+
+![Save Images Node with metadata example](workflow_save_images_metadata.png "Save Images Node with metadata example")
+
+In the latest version of this set of custom node, the option to save metadata checks for the seed, sampler, etc. automatically but sometimes the detection of
+the positive and negative prompt are wonky (if you load them from a path), in this case it's possible to pass the string value to the **Save Images** node.
+
+N.B. The metadata extraction of the seed, sampler, cfg, etc. will be wonky too if there's many KSampler nodes and sampling happenning in the same workflow.
+
 ## JSPaint
 
 ![JSPaint Nodes example](workflow_jspaint.png "JSPaint Nodes example")

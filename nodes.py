@@ -404,7 +404,7 @@ class D00MYsSaveText:
                 "filename_prefix": ("STRING", {"default": "ComfyUI"}),
             },
             "optional": {
-                "images_paths": ("STRING", {"forceInput": True}),
+                "images_paths": ("STRING", {"forceInput": True, "default": []}),
             }
         }
 
@@ -472,8 +472,8 @@ class D00MYsSaveImage:
                 "save_metadata": ("BOOLEAN", {"default": True}),
             },
             "optional": {
-                "opt_positive_prompt": ("STRING", {"forceInput": True}),
-                "opt_negative_prompt": ("STRING", {"forceInput": True}),
+                "opt_positive_prompt": ("STRING", {"forceInput": True, "default": []}),
+                "opt_negative_prompt": ("STRING", {"forceInput": True, "default": []}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -549,7 +549,7 @@ class D00MYsRandomImages:
                 "count": ("INT", {"default": 1}),
             },
             "optional": {
-                "captions": ("STRING", {"forceInput": True}),
+                "captions": ("STRING", {"forceInput": True, "default": []}),
             }
         }
     
