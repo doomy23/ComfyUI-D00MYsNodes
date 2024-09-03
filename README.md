@@ -50,3 +50,4 @@ N.B. The metadata extraction of the seed, sampler, cfg, etc. will be wonky too i
 - For inspirations : 
     - pythongosssss custom scripts : https://github.com/pythongosssss/ComfyUI-Custom-Scripts
     - GeekyRemB : https://github.com/GeekyGhost/ComfyUI-GeekyRemB
+    - alexopus : https://github.com/alexopus/ComfyUI-Image-Saver/
